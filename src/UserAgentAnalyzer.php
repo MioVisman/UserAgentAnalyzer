@@ -81,6 +81,7 @@ class UserAgentAnalyzer
         'SymbOS'           => ['Symbian OS',    true,  null],
         'Series'           => ['Symbian OS',    true,  'series'],
         'MIDP'             => ['Java',          true,  'java'],
+        'Gecko'            => ['Firefox OS',    true,  'firefoxos'],
     ];
 
     protected $browser = [ //   name                      mobile method
@@ -104,6 +105,7 @@ class UserAgentAnalyzer
         'QupZilla'         => ['QupZilla',                 null, null],
         'Iron'             => ['SRWare Iron',              null, null],
         'Chrome'           => ['Chrome',                   null, 'crome'],
+        'FxiOS'            => ['Firefox for iOS',          null, null],
         'Arora'            => ['Arora',                    null, null],
         'Epiphany'         => ['Epiphany',                 null, null],
         'Galeon'           => ['Galeon',                   null, null],
@@ -138,6 +140,18 @@ class UserAgentAnalyzer
         '6.3'  => 'Windows 8.1',
         '6.4'  => 'Windows 10',
         '10.0' => 'Windows 10',
+    ];
+
+    protected $firefoxos = [
+        '18.0' => '1.0.1',
+        '18.1' => '1.1',
+        '26.0' => '1.2',
+        '28.0' => '1.3',
+        '30.0' => '1.4',
+        '32.0' => '2.0',
+        '34.0' => '2.1',
+        '37.0' => '2.2',
+        '44.0' => '2.5',
     ];
 
     public function analyse($ua = null)
@@ -243,6 +257,11 @@ class UserAgentAnalyzer
         if ($count < 1) {
             $this->result['isRobot'] = false;
 #            $this->result['details'] = $this->details;
+            if (true !== $this->result['isMobile']) {
+                if (isset($this->details['Mobile']) || isset($this->details['Tablet'])) {
+                    $this->result['isMobile'] = true;
+                }
+            }
 
             return $this->result;
         }
@@ -383,6 +402,28 @@ class UserAgentAnalyzer
     {
         $data['v'] = null;
         return $data;
+    }
+
+    /**
+     * Firefox OS, KaiOS
+     */
+    protected function firefoxos(array $data, $name)
+    {
+        if (! empty($this->details['rv']) && ! empty($this->details['Firefox'])) {
+            if (! empty($this->details['KAIOS'])) {
+                $data[0]   = 'KaiOS';
+                $data['v'] = $this->details['KAIOS'];
+                return $data;
+            } elseif (! empty($this->details['KaiOS'])) {
+                $data[0]   = 'KaiOS';
+                $data['v'] = $this->details['KaiOS'];
+                return $data;
+            } elseif (isset($this->firefoxos[$data['v']])) {
+                $data['v'] = $this->firefoxos[$data['v']];
+                return $data;
+            }
+        }
+        return false;
     }
 
     /**
