@@ -61,9 +61,6 @@ class UserAgentAnalyzer
         'Android'          => ['Android',       true,  null],
         'Adr'              => ['Android',       true,  null],
         'CrOS'             => ['Chrome OS',     false, null],
-        'FreeBSD'          => ['FreeBSD',       false, null],
-        'NetBSD'           => ['NetBSD',        false, null],
-        'OpenBSD'          => ['OpenBSD',       false, null],
         'CentOS'           => ['CentOS',        false, null],
         'SUSE'             => ['openSUSE',      false, null],
         'Fedora'           => ['Fedora',        false, null],
@@ -72,6 +69,9 @@ class UserAgentAnalyzer
         'Red Hat'          => ['Red Hat',       false, null],
         'Debian'           => ['Debian',        false, null],
         'Linux'            => ['Linux',         false, null],
+        'FreeBSD'          => ['FreeBSD',       false, null],
+        'NetBSD'           => ['NetBSD',        false, null],
+        'OpenBSD'          => ['OpenBSD',       false, null],
         'X11'              => ['Unix',          false, null],
         'Macintosh'        => ['Macintosh',     false, null],
         'Bada'             => ['Bada',          true,  null],
@@ -98,16 +98,17 @@ class UserAgentAnalyzer
         'Edge'             => ['Microsoft Edge',           null, null],
         'MSIE'             => ['Internet Explorer',        null, null],
         'OPR'              => ['Opera',                    null, null],
+        'Epiphany'         => ['Epiphany',                 null, null],
         'Chromium'         => ['Chromium',                 null, null],
-        'CriOS'            => ['Chrome',                   null, null],
+        'CriOS'            => ['Chrome for iOS',           null, null],
         'Vivaldi'          => ['Vivaldi',                  null, null],
         'YaBrowser'        => ['Yandex Browser',           null, null],
         'QupZilla'         => ['QupZilla',                 null, null],
         'Iron'             => ['SRWare Iron',              null, null],
-        'Chrome'           => ['Chrome',                   null, 'crome'],
+        'SamsungBrowser'   => ['Samsung Browser',          null, null],
+        'Chrome'           => ['Chrome',                   null, 'chrome'],
         'FxiOS'            => ['Firefox for iOS',          null, null],
         'Arora'            => ['Arora',                    null, null],
-        'Epiphany'         => ['Epiphany',                 null, null],
         'Galeon'           => ['Galeon',                   null, null],
         'Konqueror'        => ['Konqueror',                null, null],
         'Otter'            => ['Otter Browser',            null, 'otter'],
@@ -154,6 +155,13 @@ class UserAgentAnalyzer
         '44.0' => '2.5',
     ];
 
+    protected $trident = [
+        '4.0' => '8.0',
+        '5.0' => '9.0',
+        '6.0' => '10.0',
+        '7.0' => '11.0',
+    ];
+
     public function analyse($ua = null)
     {
         $this->details = [];
@@ -184,11 +192,13 @@ class UserAgentAnalyzer
         $bot     = strpos($uaLC, 'bot');
         $spider  = strpos($uaLC, 'spider');
         $crawler = strpos($uaLC, 'crawler');
+        $preview = strpos($uaLC, 'preview');
         $mozilla = strpos($uaLC, 'mozilla');
 
         if ((false !== $bot && false === strpos($ua, 'CUBOT'))
             || (false !== $spider && false === strpos($ua, 'GLX Spider'))
             || false !== $crawler
+            || false !== $preview
         ) {
             $count += 1;
         }
@@ -273,6 +283,8 @@ class UserAgentAnalyzer
         } elseif (false !== $spider && preg_match('%[^;()]*spider[a-z\d\.!_-]*%i', $uaIn, $match)) {
             $uaIn = $match[0];
         } elseif (false !== $crawler && preg_match('%[^;()]*crawler[a-z\d\.!_-]*%i', $uaIn, $match)) {
+            $uaIn = $match[0];
+        } elseif (false !== $preview && preg_match('%[^;()]*preview[a-z\d\.!_-]*%i', $uaIn, $match)) {
             $uaIn = $match[0];
         } elseif (false !== $mozilla) {
             $uaIn = preg_replace('%Mozilla.*?compatible[; ]*%i', ' ', $uaIn);
@@ -461,7 +473,7 @@ class UserAgentAnalyzer
     /**
      * Chrome, Android WebView
      */
-    protected function crome(array $data, $name)
+    protected function chrome(array $data, $name)
     {
         if ('Android' === $this->result['osName']) {
             if (! empty($this->details['Version'])) {
@@ -508,22 +520,11 @@ class UserAgentAnalyzer
      */
     protected function trident(array $data, $name)
     {
-        switch ($data['v']) {
-            case '7.0':
-                $data['v'] = '11';
-                break;
-            case '6.0':
-                $data['v'] = '10';
-                break;
-            case '5.0':
-                $data['v'] = '9';
-                break;
-            case '4.0':
-                $data['v'] = '8';
-                break;
-            default:
-                return false;
+        if (isset($this->trident[$data['v']])) {
+            $data['v'] = $this->trident[$data['v']];
+            return $data;
+        } else {
+            return false;
         }
-        return $data;
     }
 }
