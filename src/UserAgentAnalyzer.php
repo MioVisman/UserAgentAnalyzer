@@ -63,11 +63,13 @@ class UserAgentAnalyzer
         'CrOS'             => ['Chrome OS',     false, null],
         'CentOS'           => ['CentOS',        false, null],
         'SUSE'             => ['openSUSE',      false, null],
-        'Fedora'           => ['Fedora',        false, null],
+        'Fedora'           => ['Fedora',        false, 'fedora'],
         'Mint'             => ['Linux Mint',    false, null],
+        'Kubuntu'          => ['Kubuntu',       false, null],
         'Ubuntu'           => ['Ubuntu',        false, null],
-        'Red Hat'          => ['Red Hat',       false, null],
+        'Hat'              => ['Red Hat',       false, 'redhat'],
         'Debian'           => ['Debian',        false, null],
+        'Slackware'        => ['Slackware',     false, null],
         'Linux'            => ['Linux',         false, null],
         'FreeBSD'          => ['FreeBSD',       false, null],
         'NetBSD'           => ['NetBSD',        false, null],
@@ -106,11 +108,13 @@ class UserAgentAnalyzer
         'QupZilla'         => ['QupZilla',                 null, null],
         'Iron'             => ['SRWare Iron',              null, null],
         'SamsungBrowser'   => ['Samsung Internet',         null, null],
+        'Puffin'           => ['Puffin',                   true, 'puffin'],
+        'Konqueror'        => ['Konqueror',                null, null],
+        'konqueror'        => ['Konqueror',                null, null],
         'Chrome'           => ['Chrome',                   null, 'chrome'],
         'FxiOS'            => ['Firefox for iOS',          null, null],
         'Arora'            => ['Arora',                    null, null],
         'Galeon'           => ['Galeon',                   null, null],
-        'Konqueror'        => ['Konqueror',                null, null],
         'Otter'            => ['Otter Browser',            null, 'otter'],
         'Dooble'           => ['Dooble',                   null, null],
         'NokiaBrowser'     => ['Nokia Browser',            null, null],
@@ -160,6 +164,15 @@ class UserAgentAnalyzer
         '5.0' => '9.0',
         '6.0' => '10.0',
         '7.0' => '11.0',
+    ];
+
+    protected $puffin = [
+        'IP' => ['iOS',           true],
+        'IT' => ['iOS',           true],
+        'AP' => ['Android',       true],
+        'AT' => ['Android',       true],
+        'WP' => ['Windows Phone', true],
+        'WD' => ['Windows',       false],
     ];
 
     public function analyse($ua = null)
@@ -384,6 +397,41 @@ class UserAgentAnalyzer
     }
 
     /**
+     * Fedora
+     */
+    protected function fedora(array $data, $name)
+    {
+        if (\preg_match('%\bFedora/[\d\.-]+fc\K\d+%', $this->ua, $match)) {
+            $data['v'] = $match[0];
+        } else {
+            $data['v'] = null;
+        }
+        return $data;
+    }
+
+    /**
+     * Red Hat, Red Hat Enterprise Linux
+     */
+    protected function redhat(array $data, $name)
+    {
+        if (! isset($this->details['Red'])) {
+            return false;
+        }
+        if (empty($data['v'])) {
+            if (! empty($this->details['Enterprise'])) {
+                $data['v'] = $this->details['Enterprise'];
+            } elseif (! empty($this->details['Linux'])) {
+                $data['v'] = $this->details['Linux'];
+            }
+        }
+        if (\preg_match('%\b(?:Linux|Enterprise|Hat)/[\d\.-]+el\K\d+%', $this->ua, $match)) {
+            $data[0]   = 'Red Hat Enterprise Linux';
+            $data['v'] = $match[0];
+        }
+        return $data;
+    }
+
+    /**
      * BlackBerry OS
      */
     protected function bb(array $data, $name)
@@ -468,6 +516,20 @@ class UserAgentAnalyzer
             $data['v'] = $this->details['Mini'];
         } elseif ('9.80' == $data['v'] && ! empty($this->details['Version'])) {
             $data['v'] = $this->details['Version'];
+        }
+        return $data;
+    }
+
+    /**
+     * Puffin: https://www.puffinbrowser.com/help/trouble.php#it
+     */
+    protected  function puffin(array $data, $name)
+    {
+        if (\preg_match('%\bPuffin[^A-KN-Z\s]+\K[AIW][PTD]%', $this->ua, $match) && isset($this->puffin[$match[0]])) {
+            if ('Linux' === $this->result['osName']) {
+                $this->result['osName'] = $this->puffin[$match[0]][0];
+            }
+            $data[1] = $this->puffin[$match[0]][1];
         }
         return $data;
     }
