@@ -105,7 +105,7 @@ class UserAgentAnalyzer
         'YaBrowser'        => ['Yandex Browser',           null, null],
         'QupZilla'         => ['QupZilla',                 null, null],
         'Iron'             => ['SRWare Iron',              null, null],
-        'SamsungBrowser'   => ['Samsung Browser',          null, null],
+        'SamsungBrowser'   => ['Samsung Internet',         null, null],
         'Chrome'           => ['Chrome',                   null, 'chrome'],
         'FxiOS'            => ['Firefox for iOS',          null, null],
         'Arora'            => ['Arora',                    null, null],
@@ -114,7 +114,7 @@ class UserAgentAnalyzer
         'Otter'            => ['Otter Browser',            null, 'otter'],
         'Dooble'           => ['Dooble',                   null, null],
         'NokiaBrowser'     => ['Nokia Browser',            null, null],
-        'Safari'           => ['Safari',                   null, 'safari'],
+        'BrowserNG'        => ['Nokia Browser',            null, null],
         'Flock'            => ['Flock',                    null, null],
         'Iceweasel'        => ['Iceweasel',                null, null],
         'SeaMonkey'        => ['SeaMonkey',                null, null],
@@ -124,11 +124,11 @@ class UserAgentAnalyzer
         'Firefox'          => ['Firefox',                  null, null],
         'Trident'          => ['Internet Explorer',        null, 'trident'],
         'Dolfin'           => ['Dolfin',                   null, null],
+        'AppleWebKit'      => ['WebKit',                   null, 'webkit'],
         'Lynx'             => ['Lynx',                     null, null],
         'Links'            => ['Links',                    null, null],
         'ELinks'           => ['ELinks',                   null, null],
         'NetSurf'          => ['NetSurf',                  null, null],
-        'BrowserNG'        => ['Nokia Browser',            null, null],
     ];
 
     protected $windows = [
@@ -271,6 +271,8 @@ class UserAgentAnalyzer
                 if (isset($this->details['Mobile']) || isset($this->details['Tablet'])) {
                     $this->result['isMobile'] = true;
                 }
+            } elseif (isset($this->details['SMART-TV']) || isset($this->details['TV'])) {
+                $this->result['isMobile'] = false;
             }
 
             return $this->result;
@@ -500,22 +502,6 @@ class UserAgentAnalyzer
     }
 
     /**
-     * Safari, Android Browser(?), BlackBerry Browser
-     */
-    protected function safari(array $data, $name)
-    {
-        if (! empty($this->details['Version'])) {
-            $data['v'] = $this->details['Version'];
-        }
-        if ('Android' === $this->result['osName']) {
-            $data[0] = 'Android Browser';
-        } elseif ('BlackBerry OS' === $this->result['osName']) {
-            $data[0] = 'BlackBerry Browser';
-        }
-        return $data;
-    }
-
-    /**
      * IE
      */
     protected function trident(array $data, $name)
@@ -526,5 +512,41 @@ class UserAgentAnalyzer
         } else {
             return false;
         }
+    }
+
+    /**
+     * Safari, Android Browser(?), BlackBerry Browser,
+     * Samsung Internet: http://developer.samsung.com/internet/user-agent-string-format
+     */
+    protected function webkit(array $data, $name)
+    {
+        if (! empty($this->details['Version'])) {
+            $data['v'] = $this->details['Version'];
+        }
+
+        switch ($this->result['osName']) {
+            case 'iOS':
+            case 'Mac OS X':
+            case 'Macintosh':
+                if (! empty($this->details['Version'])) {
+                    $data[0] = 'Safari';
+                }
+                break;
+            case 'Android':
+                $data[0] = 'Android Browser';
+                break;
+            case 'BlackBerry OS':
+                $data[0] = 'BlackBerry Browser';
+                break;
+            case 'Tizen':
+                if (isset($this->details['SMART-TV']) || isset($this->details['TV'])) {
+                    $data[0] = 'Tizen TV Web Application';
+                    $data[1] = false;
+                } else {
+                    $data[0] = 'Tizen Mobile Web Application';
+                }
+                break;
+        }
+        return $data;
     }
 }
