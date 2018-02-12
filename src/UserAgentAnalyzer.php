@@ -187,40 +187,40 @@ class UserAgentAnalyzer
         ];
 
         $count   = 0;
-        $uaLC    = strtolower($ua);
+        $uaLC    = \strtolower($ua);
         $uaIn    = $ua;
-        $bot     = strpos($uaLC, 'bot');
-        $spider  = strpos($uaLC, 'spider');
-        $crawler = strpos($uaLC, 'crawler');
-        $preview = strpos($uaLC, 'preview');
-        $mozilla = strpos($uaLC, 'mozilla');
+        $bot     = \strpos($uaLC, 'bot');
+        $spider  = \strpos($uaLC, 'spider');
+        $crawler = \strpos($uaLC, 'crawler');
+        $preview = \strpos($uaLC, 'preview');
+        $mozilla = \strpos($uaLC, 'mozilla');
 
-        if ((false !== $bot && false === strpos($ua, 'CUBOT'))
-            || (false !== $spider && false === strpos($ua, 'GLX Spider'))
+        if ((false !== $bot && false === \strpos($ua, 'CUBOT'))
+            || (false !== $spider && false === \strpos($ua, 'GLX Spider'))
             || false !== $crawler
             || false !== $preview
         ) {
             $count += 1;
         }
 
-        if (false !== strpos($uaLC, 'http')) {
+        if (false !== \strpos($uaLC, 'http')) {
             $count += 0.5;
-            $uaIn   = preg_replace('%https?:[^);]*[);]?%i', ' ', $uaIn);
+            $uaIn   = \preg_replace('%https?:[^);]*[);]?%i', ' ', $uaIn);
         }
 
-        if (false !== strpos($uaIn, 'www.')) {
+        if (false !== \strpos($uaIn, 'www.')) {
             $count += 0.5;
-            $uaIn   = preg_replace('%www\.[^)]*[);]?%i', ' ', $uaIn);
+            $uaIn   = \preg_replace('%www\.[^)]*[);]?%i', ' ', $uaIn);
         }
 
-        if (false !== strpos($uaIn, '@')) {
+        if (false !== \strpos($uaIn, '@')) {
             $count += 0.5;
-            $uaIn   = preg_replace('%[^\s/;()]+@[^);]*[);]?%i', ' ', $uaIn);
+            $uaIn   = \preg_replace('%[^\s/;()]+@[^);]*[);]?%i', ' ', $uaIn);
         }
 
         if (false !== $mozilla
-            && false === strpos($ua, 'Gecko')
-            && (false === strpos($ua, '(compatible; MSIE ') || false === strpos($ua, 'Windows'))
+            && false === \strpos($ua, 'Gecko')
+            && (false === \strpos($ua, '(compatible; MSIE ') || false === \strpos($ua, 'Windows'))
         ) {
             $count += 0.3;
         }
@@ -280,26 +280,26 @@ class UserAgentAnalyzer
 
         $this->result['isRobot'] = true;
 
-        if (false !== $bot && preg_match('%[^;()]*bot[a-z\d\.!_-]*%i', $uaIn, $match)) {
+        if (false !== $bot && \preg_match('%[^;()]*bot[a-z\d\.!_-]*%i', $uaIn, $match)) {
             $uaIn = $match[0];
-        } elseif (false !== $spider && preg_match('%[^;()]*spider[a-z\d\.!_-]*%i', $uaIn, $match)) {
+        } elseif (false !== $spider && \preg_match('%[^;()]*spider[a-z\d\.!_-]*%i', $uaIn, $match)) {
             $uaIn = $match[0];
-        } elseif (false !== $crawler && preg_match('%[^;()]*crawler[a-z\d\.!_-]*%i', $uaIn, $match)) {
+        } elseif (false !== $crawler && \preg_match('%[^;()]*crawler[a-z\d\.!_-]*%i', $uaIn, $match)) {
             $uaIn = $match[0];
-        } elseif (false !== $preview && preg_match('%[^;()]*preview[a-z\d\.!_-]*%i', $uaIn, $match)) {
+        } elseif (false !== $preview && \preg_match('%[^;()]*preview[a-z\d\.!_-]*%i', $uaIn, $match)) {
             $uaIn = $match[0];
         } elseif (false !== $mozilla) {
-            $uaIn = preg_replace('%Mozilla.*?compatible[; ]*%i', ' ', $uaIn);
-        } elseif (false !== strpos($uaLC, 'docomo')) {
-            $uaIn = preg_replace('%DoCoMo.*?compatible[; ]*%i', ' ', $uaIn);
+            $uaIn = \preg_replace('%Mozilla.*?compatible[; ]*%i', ' ', $uaIn);
+        } elseif (false !== \strpos($uaLC, 'docomo')) {
+            $uaIn = \preg_replace('%DoCoMo.*?compatible[; ]*%i', ' ', $uaIn);
         }
 
-        $uaIn = trim(preg_replace($this->clean, ' ', $uaIn), ' ._-');
-        $len  = strlen($uaIn);
+        $uaIn = \trim(\preg_replace($this->clean, ' ', $uaIn), ' ._-');
+        $len  = \strlen($uaIn);
 
-        if ($len < 3 || $len > 30 || count(preg_split('%[ ._-]%', $uaIn)) > 4) {
+        if ($len < 3 || $len > 30 || \count(\preg_split('%[ ._-]%', $uaIn)) > 4) {
             $uaIn = null;
-        } elseif (preg_match('%' . preg_quote($uaIn, '%'). '[v /.-]*(\d+(\.[x\d]+)*)%i', $ua, $match)) {
+        } elseif (\preg_match('%' . \preg_quote($uaIn, '%'). '[v /.-]*(\d+(\.[x\d]+)*)%i', $ua, $match)) {
             $this->result['botVersion'] = $match[1];
         }
 
@@ -311,7 +311,7 @@ class UserAgentAnalyzer
 
     protected function details($ua)
     {
-        preg_match_all($this->pattern, $ua, $matches, PREG_SET_ORDER);
+        \preg_match_all($this->pattern, $ua, $matches, \PREG_SET_ORDER);
 
         foreach ($matches as $m) {
             if (! isset($m[3])) {
@@ -343,7 +343,7 @@ class UserAgentAnalyzer
             $data[0]   = 'Windows Phone';
             $data[1]   = true;
             $data['v'] = $this->details['Phone'];
-        } elseif (false !== strpos($this->ua, 'Windows Mobile')) {
+        } elseif (false !== \strpos($this->ua, 'Windows Mobile')) {
             $data[0]   = 'Windows Mobile';
             $data[1]   = true;
         }
@@ -367,9 +367,9 @@ class UserAgentAnalyzer
     protected function ios(array $data, $name)
     {
         if (! empty($this->details['iPhone OS'])) {
-            $data['v'] = str_replace('_', '.', $this->details['iPhone OS']);
+            $data['v'] = \str_replace('_', '.', $this->details['iPhone OS']);
         } elseif (! empty($this->details['CPU OS'])) {
-            $data['v'] = str_replace('_', '.', $this->details['CPU OS']);
+            $data['v'] = \str_replace('_', '.', $this->details['CPU OS']);
         }
         return $data;
     }
@@ -379,7 +379,7 @@ class UserAgentAnalyzer
      */
     protected function macosx(array $data, $name)
     {
-        $data['v'] = str_replace('_', '.', $data['v']);
+        $data['v'] = \str_replace('_', '.', $data['v']);
         return $data;
     }
 
@@ -401,7 +401,7 @@ class UserAgentAnalyzer
      */
     protected function series(array $data, $name)
     {
-        if (in_array($data['v'], ['40', '60', '80'])) {
+        if (\in_array($data['v'], ['40', '60', '80'])) {
             $data['v'] = null;
             return $data;
         }  else {
