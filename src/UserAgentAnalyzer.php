@@ -13,6 +13,8 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
+    const VERSION = '0.6.0.0';
+
     protected $ua;
     protected $details;
     protected $result;
@@ -61,7 +63,7 @@ class UserAgentAnalyzer
         'Android'          => ['Android',       true,  null],
         'Adr'              => ['Android',       true,  null],
         'CrOS'             => ['Chrome OS',     false, null],
-        'CentOS'           => ['CentOS',        false, null],
+        'CentOS'           => ['CentOS',        false, 'centos'],
         'SUSE'             => ['openSUSE',      false, null],
         'Fedora'           => ['Fedora',        false, 'fedora'],
         'Mint'             => ['Linux Mint',    false, null],
@@ -100,6 +102,7 @@ class UserAgentAnalyzer
         'Edge'             => ['Microsoft Edge',           null, null],
         'MSIE'             => ['Internet Explorer',        null, null],
         'OPR'              => ['Opera',                    null, null],
+        'OPiOS'            => ['Opera for iOS',            null, null],
         'Epiphany'         => ['Epiphany',                 null, null],
         'Chromium'         => ['Chromium',                 null, null],
         'CriOS'            => ['Chrome for iOS',           null, null],
@@ -397,11 +400,24 @@ class UserAgentAnalyzer
     }
 
     /**
+     * CentOS
+     */
+    protected function centos(array $data, $name)
+    {
+        if (\preg_match('%\.el(\d+)[^\s;/]*\.centos%', $this->ua, $match)) {
+            $data['v'] = $match[1];
+        } else {
+            $data['v'] = null;
+        }
+        return $data;
+    }
+
+    /**
      * Fedora
      */
     protected function fedora(array $data, $name)
     {
-        if (\preg_match('%\bFedora/[\d\.-]+fc\K\d+%', $this->ua, $match)) {
+        if (\preg_match('%\.fc\K\d+%', $this->ua, $match)) {
             $data['v'] = $match[0];
         } else {
             $data['v'] = null;
@@ -417,15 +433,8 @@ class UserAgentAnalyzer
         if (! isset($this->details['Red'])) {
             return false;
         }
-        if (empty($data['v'])) {
-            if (! empty($this->details['Enterprise'])) {
-                $data['v'] = $this->details['Enterprise'];
-            } elseif (! empty($this->details['Linux'])) {
-                $data['v'] = $this->details['Linux'];
-            }
-        }
-        if (\preg_match('%\b(?:Linux|Enterprise|Hat)/[\d\.-]+el\K\d+%', $this->ua, $match)) {
-            $data[0]   = 'Red Hat Enterprise Linux';
+        if (\preg_match('%\.el\K\d+%', $this->ua, $match)) {
+            $data[0]  .= ' Enterprise Linux';
             $data['v'] = $match[0];
         }
         return $data;
