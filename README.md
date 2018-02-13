@@ -4,11 +4,11 @@
 
 The browser/OS or robot detection by user agent.
 
-[Test site](http://uaatest.000webhostapp.com/).
+[Demo](http://uaatest.000webhostapp.com/)
 
 ## Requirements
 
-* PHP 5.6.0
+* PHP 5.6.0+
 
 ## Installation
 
