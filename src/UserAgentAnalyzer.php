@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '1.0019';
+    const VERSION = '1.0020';
 
     protected $ua;
     protected $details;
@@ -253,7 +253,7 @@ class UserAgentAnalyzer
                         continue;
                     }
                     if (null !== $data[3]) {
-                        $args = explode(',', $data[3]);
+                        $args = \explode(',', $data[3]);
                         if (null !== $this->getValue(...$args)) {
                             continue;
                         }
@@ -379,9 +379,9 @@ class UserAgentAnalyzer
 
     protected function getValue(...$args)
     {
-        if (true === end($args)) {
+        if (true === \end($args)) {
             $noEmpty = true;
-            array_pop($args);
+            \array_pop($args);
         } else {
             $noEmpty = false;
         }
@@ -423,7 +423,7 @@ class UserAgentAnalyzer
         } elseif (false !== \strpos($this->ua, 'Windows Mobile')) {
             $data[0]   = 'Windows Mobile';
             $data[1]   = true;
-        } elseif (! in_array($data['v'], ['95', '98'])) {
+        } elseif (! \in_array($data['v'], ['95', '98'])) {
             $data['v'] = null;
         } elseif ('98' === $data['v'] && '4.90' === $this->getValue('9x')) {
             $data['v'] = 'ME';
@@ -547,7 +547,7 @@ class UserAgentAnalyzer
      */
     protected function Profile(array $data, $name)
     {
-        if ('MIDP-' == substr($data['v'], 0, 5)) {
+        if ('MIDP-' == \substr($data['v'], 0, 5)) {
             $data['v'] = null;
             return $data;
         } else {
