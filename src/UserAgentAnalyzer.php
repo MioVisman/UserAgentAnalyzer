@@ -13,29 +13,24 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '1.0007';
+    const VERSION = '1.0013';
 
     protected $ua;
     protected $details;
     protected $result;
 
-    protected $pattern = '%\b
-        (
-            [a-z]
-            (?:
-                [a-z]+(?:-[a-z]+)*(?:\ [a-z]{1,2}(?![\w.]))*
-            |
-                [a-z\d]+
-            )
-        )
-        (\d+(?=[/;\ ]))?
-        [^a-z\d;]*
+    protected $pattern = '%(/)?\b
+        (?=[a-z\d])
         (?:
-            (
-                \d+(?:[._][\dx]+)*
-            )
-            [^\s;/(),]*
-        )?%ix';
+            (?:v\.?)?
+            ( \d+(?:[._][\w.-]+)? )
+        |
+            ( [a-z._-]+[a-z] )
+            ( \d+(?:[._][\dx]+)* )
+        |
+            ( [\w.-]+(?:\ [a-z]{1,2})* )
+        )
+        (?![\w.-])%ix';
 
     protected $clean = [
         '%\((?:KHTML|Linux|Mac|Windows|X11)[^)]*\)?%i',
@@ -80,7 +75,7 @@ class UserAgentAnalyzer
         'X11'              => ['Unix',          false, null, null],
         'Macintosh'        => ['Macintosh',     false, null, null],
         'Bada'             => ['Bada',          true,  null, null],
-        'BB'               => ['BlackBerry OS', true,  null, null],
+        'BB'               => ['BlackBerry OS', true,  true, null],
         'BlackBerry'       => ['BlackBerry OS', true,  null, null],
         'SymbianOS'        => ['Symbian OS',    true,  null, null],
         'SymbOS'           => ['Symbian OS',    true,  null, null],
@@ -340,22 +335,44 @@ class UserAgentAnalyzer
     protected function details($ua)
     {
         \preg_match_all($this->pattern, $ua, $matches, \PREG_SET_ORDER);
-
+#echo "<pre>\n";
+#var_dump($matches);
+        $cur = null;
         foreach ($matches as $m) {
-            if (! isset($m[3])) {
-                $m[3] = '';
-            }
-            if (empty($this->details[$m[1]])) {
-                if (isset($m[2]) && '' !== $m[2]) {
-                    $this->details[$m[1]] = $m[2];
-                    if (empty($this->details[$m[1] . $m[2]])) {
-                        $this->details[$m[1] . $m[2]] = $m[3];
-                    }
+            if (! empty($m[1])) {
+                if (isset($m[5])) {
+                    $next  = $m[5];
+                    $value = $m[5];
+                } elseif (isset($m[3])) {
+                    $next  = $m[3] . $m[4];
+                    $value = $m[3] . $m[4];
                 } else {
-                    $this->details[$m[1]] = $m[3];
+                    $next  = null;
+                    $value = $m[2];
                 }
+            } elseif (isset($m[5])) {
+                $cur   = null;
+                $next  = $m[5];
+                $value = '';
+            } elseif (isset($m[3])) {
+                $cur   = $m[3];
+                $next  = $m[3] . $m[4];
+                $value = $m[4];
+            } else {
+                $next  = null;
+                $value = $m[2];
+            }
+
+            if ($cur && empty($this->details[$cur])) {
+                $this->details[$cur] = $value;
+            }
+            $cur = $next;
+            if ($cur && ! isset($this->details[$cur])) {
+                $this->details[$cur] = '';
             }
         }
+#var_dump($this->details);
+#echo "</pre>\n";
     }
 
     protected function getValue(...$args)
