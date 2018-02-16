@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '1.0024';
+    const VERSION = '1.0025';
 
     protected $ua;
     protected $details;
@@ -600,14 +600,17 @@ class UserAgentAnalyzer
      */
     protected function Opera(array $data, $name)
     {
+        $v = empty($this->details['Version']) ? null : $this->details['Version'];
+
         if (isset($this->details['Mobi'])) {
             $data[0]   = 'Opera Mobile';
-            $data['v'] = $this->details['Mobi'];
+            $data[1]   = true;
+            $data['v'] = $v ?: $data['v'];
         } elseif (isset($this->details['Mini'])) {
             $data[0]   = 'Opera Mini';
             $data['v'] = $this->details['Mini'];
-        } elseif ('9.80' == $data['v'] && ! empty($this->details['Version'])) {
-            $data['v'] = $this->details['Version'];
+        } elseif ('9.80' == $data['v'] && $v) {
+            $data['v'] = $v;
         }
         return $data;
     }
