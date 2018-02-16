@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '1.0016';
+    const VERSION = '1.0017';
 
     protected $ua;
     protected $details;
@@ -337,7 +337,7 @@ class UserAgentAnalyzer
     protected function details($ua)
     {
         \preg_match_all($this->pattern, $ua, $matches, \PREG_SET_ORDER);
-echo "<pre>\n";
+#echo "<pre>\n";
 #var_dump($matches);
         $cur = null;
         foreach ($matches as $m) {
@@ -373,8 +373,8 @@ echo "<pre>\n";
                 $this->details[$cur] = '';
             }
         }
-var_dump($this->details);
-echo "</pre>\n";
+#var_dump($this->details);
+#echo "</pre>\n";
     }
 
     protected function getValue(...$args)
@@ -423,6 +423,10 @@ echo "</pre>\n";
         } elseif (false !== \strpos($this->ua, 'Windows Mobile')) {
             $data[0]   = 'Windows Mobile';
             $data[1]   = true;
+        } elseif (! in_array($data['v'], ['95', '98'])) {
+            $data['v'] = null;
+        } elseif ('98' === $data['v'] && '4.90' === $this->getValue('9x')) {
+            $data['v'] = 'ME';
         }
         return $data;
     }
