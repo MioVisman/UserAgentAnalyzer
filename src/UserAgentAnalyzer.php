@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '1.0017';
+    const VERSION = '1.0018';
 
     protected $ua;
     protected $details;
@@ -480,7 +480,7 @@ class UserAgentAnalyzer
      */
     protected function CentOS(array $data, $name)
     {
-        if (\preg_match('%\.el(\d+)[^\s;/]*\.centos%', $this->ua, $match)) {
+        if (\preg_match('%\.el(\d+)[^\s;/]*\.centos%', $data['v'], $match)) {
             $data['v'] = $match[1];
         } else {
             $data['v'] = null;
@@ -493,7 +493,7 @@ class UserAgentAnalyzer
      */
     protected function Fedora(array $data, $name)
     {
-        if (\preg_match('%\.fc\K\d+%', $this->ua, $match)) {
+        if (\preg_match('%\.fc\K\d+%', $data['v'], $match)) {
             $data['v'] = $match[0];
         } else {
             $data['v'] = null;
