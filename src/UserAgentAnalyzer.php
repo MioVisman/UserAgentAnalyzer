@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '1.0025';
+    const VERSION = '1.0026';
 
     protected $ua;
     protected $details;
@@ -82,6 +82,7 @@ class UserAgentAnalyzer
         'SymbOS'           => ['Symbian OS',    true,  null, 2, null],
         'Series'           => ['Symbian OS',    true,  null, 0, null],
         'Profile'          => ['Java',          true,  true, 0, null],
+        'J2ME'             => ['Java',          true,  true, 0, null],
         'KAIOS'            => ['KaiOS',         true,  true, 2, null],
         'KaiOS'            => ['KaiOS',         true,  true, 2, null],
         'Gecko'            => ['Firefox OS',    true,  true, 0, 'AppleWebKit'],
@@ -556,12 +557,20 @@ class UserAgentAnalyzer
      */
     protected function Profile(array $data, $name)
     {
-        if ('MIDP-' == \substr($data['v'], 0, 5)) {
+        if ('MIDP' == \substr($data['v'], 0, 4)) {
             $data['v'] = null;
             return $data;
         } else {
             return false;
         }
+    }
+
+    /**
+     * Java
+     */
+    protected function J2ME(array $data, $name)
+    {
+        return $this->Profile($data, $name);
     }
 
     /**
