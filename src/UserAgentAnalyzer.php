@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '1.0013';
+    const VERSION = '1.0015';
 
     protected $ua;
     protected $details;
@@ -80,7 +80,7 @@ class UserAgentAnalyzer
         'SymbianOS'        => ['Symbian OS',    true,  null, null],
         'SymbOS'           => ['Symbian OS',    true,  null, null],
         'Series'           => ['Symbian OS',    true,  null, null],
-        'MIDP'             => ['Java',          true,  null, null],
+        'Profile'          => ['Java',          true,  true, null],
         'Gecko'            => ['Firefox OS',    true,  true, 'AppleWebKit'],
     ];
 
@@ -132,6 +132,7 @@ class UserAgentAnalyzer
         'Links'            => ['Links',                    null, null, null],
         'ELinks'           => ['ELinks',                   null, null, null],
         'NetSurf'          => ['NetSurf',                  null, null, null],
+        'NetFront'         => ['NetFront',                 true, true, null],
     ];
 
     protected $windows = [
@@ -537,10 +538,14 @@ class UserAgentAnalyzer
     /**
      * Java
      */
-    protected function MIDP(array $data, $name)
+    protected function Profile(array $data, $name)
     {
-        $data['v'] = null;
-        return $data;
+        if ('MIDP-' == substr($data['v'], 0, 5)) {
+            $data['v'] = null;
+            return $data;
+        } else {
+            return false;
+        }
     }
 
     /**
