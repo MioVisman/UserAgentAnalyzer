@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '1.0023';
+    const VERSION = '1.0024';
 
     protected $ua;
     protected $details;
@@ -68,6 +68,7 @@ class UserAgentAnalyzer
         'Hat'              => ['Red Hat',       false, null, 2, null],
         'Debian'           => ['Debian',        false, null, 2, null],
         'Slackware'        => ['Slackware',     false, null, 2, null],
+        'MeeGo'            => ['MeeGo',         null,  null, 2, null],
         'Linux'            => ['Linux',         false, null, 2, null],
         'FreeBSD'          => ['FreeBSD',       false, null, 2, null],
         'NetBSD'           => ['NetBSD',        false, null, 2, null],
@@ -118,8 +119,8 @@ class UserAgentAnalyzer
         'Galeon'           => ['Galeon',                   null, null, 2, null],
         'Otter'            => ['Otter Browser',            null, true, 2, null],
         'Dooble'           => ['Dooble',                   null, null, 2, null],
-        'NokiaBrowser'     => ['Nokia Browser',            null, null, 2, null],
-        'BrowserNG'        => ['Nokia Browser',            null, null, 2, null],
+        'NokiaBrowser'     => ['Nokia Browser',            true, null, 2, null],
+        'BrowserNG'        => ['Nokia Browser',            true, null, 2, null],
         'Flock'            => ['Flock',                    null, null, 2, null],
         'Iceweasel'        => ['Iceweasel',                null, null, 2, null],
         'SeaMonkey'        => ['SeaMonkey',                null, null, 2, null],
