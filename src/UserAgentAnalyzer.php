@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '1.0018';
+    const VERSION = '1.0019';
 
     protected $ua;
     protected $details;
@@ -25,8 +25,8 @@ class UserAgentAnalyzer
             (?:v\.?)?
             ( \d+(?:[._][\w.-]+)? )
         |
-            ( [a-z._-]+[a-z] )
-            ( \d+(?:[._][\dx]+)* )
+            ( [a-z._-]{2,} )
+            ( \d+(?:\.[\w.-]+)? )
         |
             ( [\w.-]+(?:\ [a-z]{1,2})* )
         )
@@ -357,7 +357,7 @@ class UserAgentAnalyzer
                 $next  = $m[5];
                 $value = '';
             } elseif (isset($m[3])) {
-                $cur   = $m[3];
+                $cur   = rtrim($m[3], '-_.');
                 $next  = $m[3] . $m[4];
                 $value = $m[4];
             } else {
