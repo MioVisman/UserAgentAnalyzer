@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '1.0015';
+    const VERSION = '1.0016';
 
     protected $ua;
     protected $details;
@@ -47,9 +47,9 @@ class UserAgentAnalyzer
     ];
 
     protected $os = [ //        name            mobile ver   no
-        'Windows NT'       => ['Windows NT',    false, null, null],
+        'Windows NT'       => ['Windows',       false, true, null],
         'Windows CE'       => ['Windows CE',    true,  null, null],
-        'Windows'          => ['Windows',       false, null, null],
+        'Windows'          => ['Windows',       false, null, 'Windows NT'],
         'iPad'             => ['iOS',           true,  null, null],
         'iPod'             => ['iOS',           true,  null, null],
         'iPhone'           => ['iOS',           true,  null, null],
@@ -135,17 +135,18 @@ class UserAgentAnalyzer
         'NetFront'         => ['NetFront',                 true, true, null],
     ];
 
-    protected $windows = [
-        '5.0'  => 'Windows 2000',
-        '5.01' => 'Windows 2000',
-        '5.1'  => 'Windows XP',
-        '5.2'  => 'Windows XP',
-        '6.0'  => 'Windows Vista',
-        '6.1'  => 'Windows 7',
-        '6.2'  => 'Windows 8',
-        '6.3'  => 'Windows 8.1',
-        '6.4'  => 'Windows 10',
-        '10.0' => 'Windows 10',
+    protected $windowsnt = [
+        '4.0'  => 'NT 4.0',
+        '5.0'  => '2000',
+        '5.01' => '2000',
+        '5.1'  => 'XP',
+        '5.2'  => 'XP',
+        '6.0'  => 'Vista',
+        '6.1'  => '7',
+        '6.2'  => '8',
+        '6.3'  => '8.1',
+        '6.4'  => '10',
+        '10.0' => '10',
     ];
 
     protected $firefoxos = [
@@ -336,7 +337,7 @@ class UserAgentAnalyzer
     protected function details($ua)
     {
         \preg_match_all($this->pattern, $ua, $matches, \PREG_SET_ORDER);
-#echo "<pre>\n";
+echo "<pre>\n";
 #var_dump($matches);
         $cur = null;
         foreach ($matches as $m) {
@@ -372,8 +373,8 @@ class UserAgentAnalyzer
                 $this->details[$cur] = '';
             }
         }
-#var_dump($this->details);
-#echo "</pre>\n";
+var_dump($this->details);
+echo "</pre>\n";
     }
 
     protected function getValue(...$args)
@@ -402,10 +403,12 @@ class UserAgentAnalyzer
      */
     protected function WindowsNT(array $data, $name)
     {
-        if (isset($this->windows[$data['v']])) {
-            $data[0] = $this->windows[$data['v']];
+        if (isset($this->windowsnt[$data['v']])) {
+            $data['v'] = $this->windowsnt[$data['v']];
+            return $data;
+        } else {
+            return false;
         }
-        return $data;
     }
 
     /**
