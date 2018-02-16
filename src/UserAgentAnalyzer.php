@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '1.0026';
+    const VERSION = '1.0027';
 
     protected $ua;
     protected $details;
@@ -55,6 +55,8 @@ class UserAgentAnalyzer
         'iPhone'           => ['iOS',           true,  null, 3, null],
         'Mac OS X'         => ['Mac OS X',      false, null, 2, null],
         'Tizen'            => ['Tizen',         true,  null, 3, null],
+        'webOS'            => ['webOS',         true,  true, 2, null],
+        'hpwOS'            => ['webOS',         true,  true, 2, null],
         'Android'          => ['Android',       true,  null, 2, null],
         'Adr'              => ['Android',       true,  null, 2, null],
         'RemixOS'          => ['Remix OS',      false, null, 2, null],
@@ -131,6 +133,7 @@ class UserAgentAnalyzer
         'Firefox'          => ['Firefox',                  null, true, 2, 'AppleWebKit'],
         'Trident'          => ['Internet Explorer',        null, true, 2, null],
         'Dolfin'           => ['Dolfin',                   null, null, 2, null],
+        'wOSBrowser'       => ['webOS Browser',            null, true, 2, null],
         'AppleWebKit'      => ['WebKit',                   null, true, 2, 'Gecko'],
         'Lynx'             => ['Lynx',                     null, null, 2, null],
         'Links'            => ['Links',                    null, null, 2, null],
