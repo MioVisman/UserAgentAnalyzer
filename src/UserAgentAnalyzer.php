@@ -13,24 +13,97 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '1.0027';
+    const VERSION = '2.0000';
+
+    const WINNT = [
+        '4.0'  => 'NT 4.0',
+        '5.0'  => '2000',
+        '5.01' => '2000',
+        '5.1'  => 'XP',
+        '5.2'  => 'XP',
+        '6.0'  => 'Vista',
+        '6.1'  => '7',
+        '6.2'  => '8',
+        '6.3'  => '8.1',
+        '6.4'  => '10',
+        '10.0' => '10',
+    ];
+
+    const WINP = [
+        '%^(7|8)(?:\.(\d+))?(?:\.\d+)*$%' => null,
+        '%^10(?:\.\d+)*$%'                => [9002, 'win', '10 Mobile'],
+    ];
+
+    const REDHAT = [
+        '%\.el(\d+)%'  => [null, 'rhel', null],
+        '*'            => null,
+    ];
+
+    const TRIDENT = [
+        '3.1' => [7110, 'iemo', '7.0'],
+        '4.0' => [7100, 'msie', '8.0'],
+        '5.0' => [7100, 'msie', '9.0'],
+        '6.0' => [7100, 'msie', '10.0'],
+        '7.0' => [7100, 'msie', '11.0'],
+        '8.0' => [7100, 'msie', '11.0'],
+        '*'   => null,
+    ];
+
+    const GECKO = [
+        '%^([12]\d{7})$%'         => null,
+        '%^(\d\d?(?:\.\d\d?)+)$%' => [null, null, null, 'handlerFFOS'],
+    ];
+
+    const S60 = [
+        '0.9' => '6.1',
+        '1.2' => '6.1',
+        '2.0' => '7.0s',
+        '2.1' => '7.0s',
+        '2.6' => '8.0a',
+        '2.8' => '8.1a',
+        '3.0' => '9.1',
+        '3.1' => '9.2',
+        '3.2' => '9.3',
+        '5.0' => '9.4',
+        '5.2' => '9.5',
+        '5.3' => '10.1',
+        '5.4' => '10.1',
+        '5.5' => '10.1',
+    ];
 
     protected $ua;
     protected $details;
     protected $result;
 
-    protected $pattern = '%(/)?\b
-        (?=[a-z\d])
+    protected $stop = [
+        '/' => true,
+        ';' => true,
+        ')' => true,
+        ']' => true,
+        ',' => true,
+    ];
+
+    protected $pattern = '%\b
+        ( [a-z]++ | [A-Z]++ (?: [a-z]++ )? | [\w.]++ )
         (?:
-            (?:v\.?)?
-            ( \d+(?:[._][\w.-]+)? )
-        |
-            ( [a-z._-]{2,} )
-            ( \d+(?:\.[\w.-]+)? )
-        |
-            ( [\w.-]+(?:\ [a-z]{1,2})* )
+            ( [A-Z]++ (?: [a-z]++ )? | [-_]? (?! [\d_] ) \w+ )
+            ( [A-Z]++ (?: [a-z]++ )? | [-_]? (?! [\d_] ) \w+ )?
+        )?
+        ( \d++ [\w.-]* )?
+        (?>
+            ( $ | \W )
         )
-        (?![\w.-])%ix';
+        (?:
+            (?<! [;)\]] )
+            (?: [^\w.;)\]-]+ )?
+            (?:
+                (?: [vV] \.? \ ? )? ( \d++ (?: [._] [\w.-]+ )? )
+            |
+                (?<= [a-zA-Z] / ) ( [^/\s;()\[\]]+ )
+            )
+            (?! [\w.-] )
+        )?
+        %x';
 
     protected $clean = [
         '%\((?:KHTML|Linux|Mac|Windows|X11)[^)]*\)?%i',
@@ -46,114 +119,326 @@ class UserAgentAnalyzer
         '%\s{2,}%',
     ];
 
-    protected $os = [ //        name            mobile ver      no
-        'Windows NT'       => ['Windows',       false, true, 0, null],
-        'Windows CE'       => ['Windows CE',    true,  null, 2, null],
-        'Windows'          => ['Windows',       false, null, 0, 'Windows NT'],
-        'iPad'             => ['iOS',           true,  null, 3, null],
-        'iPod'             => ['iOS',           true,  null, 3, null],
-        'iPhone'           => ['iOS',           true,  null, 3, null],
-        'Mac OS X'         => ['Mac OS X',      false, null, 2, null],
-        'Tizen'            => ['Tizen',         true,  null, 3, null],
-        'webOS'            => ['webOS',         true,  true, 2, null],
-        'hpwOS'            => ['webOS',         true,  true, 2, null],
-        'Android'          => ['Android',       true,  null, 2, null],
-        'Adr'              => ['Android',       true,  null, 2, null],
-        'RemixOS'          => ['Remix OS',      false, null, 2, null],
-        'CrOS'             => ['Chrome OS',     false, null, 2, null],
-        'CentOS'           => ['CentOS',        false, null, 2, null],
-        'SUSE'             => ['openSUSE',      false, null, 2, null],
-        'Fedora'           => ['Fedora',        false, null, 1, null],
-        'Mint'             => ['Linux Mint',    false, null, 2, null],
-        'Kubuntu'          => ['Kubuntu',       false, null, 2, null],
-        'Ubuntu'           => ['Ubuntu',        false, null, 2, null],
-        'Hat'              => ['Red Hat',       false, null, 2, null],
-        'Debian'           => ['Debian',        false, null, 2, null],
-        'Slackware'        => ['Slackware',     false, null, 2, null],
-        'MeeGo'            => ['MeeGo',         null,  null, 2, null],
-        'Linux'            => ['Linux',         false, null, 2, null],
-        'FreeBSD'          => ['FreeBSD',       false, null, 2, null],
-        'NetBSD'           => ['NetBSD',        false, null, 2, null],
-        'OpenBSD'          => ['OpenBSD',       false, null, 2, null],
-        'X11'              => ['Unix',          false, null, 0, null],
-        'Macintosh'        => ['Macintosh',     false, null, 3, null],
-        'Bada'             => ['Bada',          true,  null, 2, null],
-        'BB'               => ['BlackBerry OS', true,  true, 1, null],
-        'BlackBerry'       => ['BlackBerry OS', true,  null, 2, null],
-        'SymbianOS'        => ['Symbian OS',    true,  null, 2, null],
-        'SymbOS'           => ['Symbian OS',    true,  null, 2, null],
-        'Series'           => ['Symbian OS',    true,  null, 0, null],
-        'Profile'          => ['Java',          true,  true, 0, null],
-        'J2ME'             => ['Java',          true,  true, 0, null],
-        'KAIOS'            => ['KaiOS',         true,  true, 2, null],
-        'KaiOS'            => ['KaiOS',         true,  true, 2, null],
-        'Gecko'            => ['Firefox OS',    true,  true, 0, 'AppleWebKit'],
+    protected $raw = [ //              0     1      2      3     4
+        'UCBrowser'              => ['br', 9001, 'ucbr', null,  '%^(\d\d?)\.(\d\d?)(?:\.\d+)*$%'],
+        'UC Browser'             => ['br', 9001, 'ucbr', null,  '%^(\d\d?)\.(\d\d?)(?:\.\d+)*$%'],
+        'UC '                    => ['nx'],
+        'UCWEB'                  => ['br', 9000, 'ucbr', null,  ''],
+// ?    'U3/'          /* !!! */ =>
+// ?    'U2/'          /* !!! */ =>
+
+        'Opera Mobi'             => ['br', 8030, 'opro', null,  null, 'f' => -0.2, 'm' => 100],
+        'Opera Mini'             => ['br', 8020, 'opri', true,  '%^(\d\d?)\.(\d\d?)%', 'f' => -0.2, 'm' => 50],
+        'Opera '                 => ['br', 8010, 'oper', true,  '%^([0-9]|1[0-2])\.(\d\d?)%', 's' => 'Opera'],
+        'Opera/'                 => ['br', 8010, 'oper', true,  '%^([0-9]|1[0-2])\.(\d\d?)%', 's' => 'Opera'],
+        'Presto/'      /* !!! */ => ['br', 8000, 'prst', true,  '%^([1-2](?:\.\d+)*)$%', 's' => 'Presto'],
+
+        'Avant Browser'          => ['br', 7600, 'avnt', null,  ''],
+        'Avant TriCore'          => ['br', 7600, 'avnt', null,  ''],
+        'Avant '                 => ['nx'],
+        'Maxthon'                => ['br', 7500, 'mxth', null,  '%^(\d)\.(\d)%'],
+        'MAXTHON'                => ['br', 7500, 'mxth', null,  '%^(\d)\.(\d)%'],
+        'MxBrowser'              => ['br', 7500, 'mxth', null,  '%^(\d)\.(\d)%'],
+        'Sleipnir/'              => ['br', 7400, 'slnr', true,  '%^(\d)\.(\d\d?)%'],
+        'Lunascape'              => ['br', 7300, 'luna', true,  '%^(\d)\.(\d\d?)%'],
+        'Edge/'                  => ['br', 7130, 'edge', true,  '%^(1\d)\.(\d+)$%'],
+        'MSIEMobile'             => ['br', 7120, 'iemo', true,  '%^(6)\.(\d\d?)%', 'm' => 100],
+        'IEMobile'               => ['br', 7110, 'iemo', true,  '%^(6|7|9|1[01])\.(\d\d?)$%', 'm' => 100],
+        'MSIE '                  => ['br', 7100, 'msie', true,  '%^(\d|10)\.(\d\d?)%'],
+        'Trident/'     /* !!! */ => ['br', 7000, 'trnt', true,  self::TRIDENT, 's' => 'Trident'],
+
+        'OmniWeb/'               => ['br', 4400, 'omni', null,  '%^(\d)\.(\d)%'],
+        'Flock/'                 => ['br', 4300, 'flck', true,  '%^(1|2|3)\.(\d\d?)%'],
+        'Konqueror'              => ['br', 4200, 'knqr', null,  '%^(1?\d)\.(\d\d?)%'],
+        'konqueror'              => ['br', 4100, 'knqr', null,  '%^(1?\d)\.(\d\d?)%'],
+        'Epiphany/'              => ['br', 4000, 'epph', true,  '%^(\d)\.(\d\d?)(?:\.\d+)*$%'],
+
+        'Midori/'                => ['br', 3500, 'midr', true,  '%^(0)\.(\d\d?)%'],
+        'Comodo_Dragon/'         => ['br', 3400, 'cdrg', true,  '%^(\d\d?)\.(\d\d?)%'],
+        'CoolNovo/'              => ['br', 3300, 'novo', true,  '%^([012])\.(\d\d?)%'],
+        'WebPositive/'           => ['br', 3200, 'wpos', null,  '%^(\d)\.(\d)%'],
+        'iCab'                   => ['br', 3100, 'icab', true,  '%^(\d)\.(\d)(?:\.\d+)*$%'],
+        'OPiOS/'                 => ['br', 3000, 'oios', true,  '%^(\d\d?)\.(\d\d?)(?:\.\d+)*$%'],
+        'OPR/'                   => ['br', 2900, 'opr',  true,  '%^(\d\d)\.(\d\d?)(?:\.\d+)*$%'],
+        'Chromium/'              => ['br', 2800, 'chmm', true,  '%^(\d\d?)\.(\d\d?)(?:\.\d+)*$%'],
+        'CriOS/'                 => ['br', 2700, 'cios', true,  '%^(\d\d?)\.(\d\d?)(?:\.\d+)*$%'],
+        'Vivaldi/'               => ['br', 2600, 'viva', true,  '%^(\d)\.(\d\d?)(?:\.\d+)*$%'],
+        'YaBrowser/'             => ['br', 2500, 'yabr', true,  '%^(\d\d?)\.(\d\d?)(?:\.\d+)*$%'],
+        'QupZilla/'              => ['br', 2400, 'qzll', true,  '%^(\d)\.(\d\d?)(?:\.\d+)*$%'],
+        'Iron/'                  => ['br', 2300, 'iron', true,  '%^(\d\d?)\.(\d\d?)(?:\.\d+)*$%'],
+        'SamsungBrowser/'        => ['br', 2200, 'ssbr', true,  '%^(\d)\.(\d\d?)$%'],
+        'Puffin/'                => ['br', 2100, 'pffn', true,  '%^(\d\d?)\.(\d+)%', 's' => 'Puffin'],
+        'RockMelt/'              => ['br', 2000, 'rkmt', true,  '%^(0|1)\.(\d\d?)(?:\.\d+)*$%'],
+        'Chrome/'                => ['br', 1900, 'chrm', true,  '%^(\d\d?)\.(\d\d?)(?:\.\d+)*$%', 's' => 'Chrome'],
+        'FxiOS/'                 => ['br', 1800, 'fios', true,  '%^(\d\d?)\.(\d\d?b?)%'],
+        'Arora/'                 => ['br', 1700, 'aror', true,  '%^(0)\.(\d\d?)%'],
+        'Otter/'                 => ['br', 1600, 'ottr', true,  '%^(\d)\.(\d\d?)%'],
+        'Dooble/'                => ['br', 1500, 'dble', true,  '%^(\d)\.(\d\d?)%'],
+        'NokiaBrowser/'          => ['br', 1400, 'nobr', true,  '%^(7|8)\.(\d\d?)%', 'm' => 100],
+        'BrowserNG/'             => ['br', 1300, 'nobr', true,  '%^(7|8)\.(\d\d?)%', 'm' => 100],
+        'Dolfin/'                => ['br', 1200, 'dlfn', true,  '%^(\d|1[01])\.(\d\d?)%'],
+        'wOSBrowser'             => ['br', 1100, 'wsbr', null,  null],
+        'AppleWebKit/' /* !!! */ => ['br', 1000, 'wbkt', true,  '%^(\d{2,3})(?:$|\.(\d+))%', 's' => 'WebKit'],
+
+        'PaleMoon/'              => ['br',  910, 'plmn', true,  '%^(\d\d?)\.(\d\d?)%'],
+        'Goanna/'      /* !!! */ => ['br',  900, 'goan', true,  '%^(\d{8}|\d\d?(?:\.\d\d?)+)$%', 's' => 'Goanna'],
+
+        'S40OviBrowser/'         => ['br',  700, 'ovib', true,  '%^(\d)\.(\d\d?)%'],
+
+        'Galeon/'                => ['br',  500, 'galn', true,  '%^(1|2)\.(\d\d?)%'],
+        'Iceweasel/'             => ['br',  450, 'icwl', true,  '%^(\d\d?)\.(\d\d?)%'],
+        'K-Meleon/'              => ['br',  400, 'kmln', true,  '%^(\d\d?)\.(\d\d?)%'],
+        'SeaMonkey/'             => ['br',  350, 'smnk', true,  '%^(1|2)\.(\d\d?)%'],
+        'Camino/'                => ['br',  300, 'cami', true,  '%^(0|1|2)\.(\d\d?)%'],
+        'Fennec/'                => ['br',  250, 'fnnc', true,  '%^(\d\d?)\.(\d\d?b?)%'],
+        'Firefox/'               => ['br',  200, 'frfx', true,  '%^(\d\d?)\.(\d\d?)%'],
+        'Gecko/'       /* !!! */ => ['br',  150, 'geck', true,  self::GECKO, 's' => 'Gecko'],
+
+        'KHTML/'       /* !!! */ => ['br',  100, 'ktml', true,  '%^(\d\d?)(?:\.(\d\d?)(?:\.(\d\d?))?)?$%', 's' => 'KHTML'],
+
+        'NetPositive'            => ['br',   80, 'npos', null,  null],
+        'Emacs-w3m'              => ['br',   70, 'ew3m', true,  '%^(1)\.(\d)%'],
+        'w3m'                    => ['br',   60, 'w3m',  true,  '%^(0)\.([\dx])%'],
+        'Lynx'                   => ['br',   50, 'lunx', null,  '%^(0|1|2)\.(\d\d?)%'], // ?
+        'Links'                  => ['br',   40, 'lnks', null,  '%^(0|1|2)\.(\d?\d?x?)%'],
+        'ELinks'                 => ['br',   30, 'elnk', null,  '%^(0)\.(\d\d?)%'],
+        'NetSurf/'               => ['br',   20, 'nsrf', true,  '%^([0-3])\.(\d)$%'],
+        'NetFront/'              => ['br',   10, 'nfrt', true,  '%^([1-4])\.(\d\d?)%'],
+        'CFNetwork/'             => ['br',    5, 'cfnw', true,  null],
+        'Mozilla'                => ['br',    0, 'mzll', true,  '%^([0-5])\.(\d\d?)$%'],
+        'Safari'                 => ['br',    0, 'wbkt', true,  '%^(\d{2,3})(?:$|\.(\d+))%'],
+
+        'Windows NT '            => ['os', 9002, 'win',  true,  self::WINNT, 'f' => -0.2],
+        'Windows CE;'            => ['os', 9001, 'winc', null,  null, 'f' => -0.2, 'm' => 100],
+        'Windows Mobile'         => ['os', 9001, 'winm', null,  null, 'f' => -0.2, 'm' => 100],
+        'Windows Phone '         => ['os', 9001, 'winp', true,  self::WINP, 'f' => -0.2, 'm' => 100],
+        'Windows Phone OS'       => ['os', 9001, 'winp', true,  self::WINP, 'f' => -0.2, 'm' => 100],
+        'Windows '               => ['os', 9000, 'win',  true,  '%^(95|98)$%'],
+        'Win '                   => ['nx'],
+        'Win 9x '                => ['os', 9000, 'win',  true,  ['4.90' => 'ME']],
+        'Win98;'                 => ['os', 9000, 'win',  false, '98'],
+        'Win95;'                 => ['os', 9000, 'win',  false, '95'],
+        'Windows;'               => ['os', 8999, 'win',  false, null],
+        'iPhone;'                => ['os', 8010, 'ios',  false, null, 'm' => 100],
+        'iPad;'                  => ['os', 8010, 'ios',  false, null, 'm' => 100],
+        'iPod;'                  => ['os', 8010, 'ios',  false, null, 'm' => 100],
+        'CPU '                   => ['nx'],
+        'CPU iPhone '            => ['nx'],
+        'CPU iPhone OS '         => ['os', 8010, 'ios',  true, '%^(1?\d)[._](\d)(?:[._]\d)?$%'],
+        'CPU OS '                => ['os', 8010, 'ios',  true, '%^(1?\d)[._](\d)(?:[._]\d)?$%'],
+        'Mac '                   => ['nx'],
+        'Mac OS '                => ['os', 8010, 'mac',  true, '%^(1?\d)[._](\d)(?:[._]\d)?$%'],
+        'Mac OS X '              => ['os', 8010, 'osx',  true, '%^(1?\d)[._](\d)(?:[._]\d)?$%', 'f' => -0.2],
+        'Mac OS X;'              => ['os', 8010, 'osx',  false, null, 'f' => -0.2],
+        'Mac OS X Mach-O;'       => ['os', 8010, 'osx',  false, null, 'f' => -0.2],
+        'Darwin/'                => ['os', 8001, 'darw', true,  null],
+        'Macintosh;'             => ['os', 8000, 'mac',  null,  null],
+        'Mac_PowerPC'            => ['os', 8000, 'mac',  null,  null],
+        'Tizen '                 => ['os', 7500, 'tizn', true, '%^(\d)\.(\d)%', 'm' => 100],
+        'Tizen;'                 => ['os', 7500, 'tizn', false, null, 'm' => 100],
+        'webOS/'                 => ['os', 7250, 'wbos', true, '%^(\d)\.(\d)%', 'm' => 100],
+        'hpwOS/'                 => ['os', 7250, 'wbos', true, '%^(\d)\.(\d)%', 'm' => 100],
+        'hpwOS '                 => ['os', 7250, 'wbos', true, '%^(\d)\.(\d)%', 'm' => 100],
+        'Android;'               => ['os', 7000, 'andr', false, null, 'm' => 100],
+        'Android '               => ['os', 7000, 'andr', true, '%^(\d)\.(\d)%', 'm' => 100],
+        'Adr '                   => ['os', 7000, 'andr', true, '%^(\d)\.(\d)%', 'm' => 100],
+        'RemixOS'                => ['os', 6000, 'remx', null,  null],
+        'CrOS'                   => ['os', 5000, 'cros', null,  null],
+        'CentOS'                 => ['os', 2400, 'cnos', null,  '%\.el(\d+)[^\s;/]*\.centos%'],
+        'SUSE'                   => ['os', 2300, 'suse', null,  ''],
+        'openSUSE'               => ['os', 2300, 'suse', null,  '%^(\d\d)\.(\d)%'],
+        'Fedora'                 => ['os', 2200, 'fdra', null,  '%\.fc(\d+)%'],
+        'LinuxMint'              => ['os', 2100, 'mint', null,  null],
+        'Kubuntu'                => ['os', 2000, 'kbnt', null,  null],
+        'Xubuntu'                => ['os', 2000, 'xbnt', null,  null],
+        'Ubuntu'                 => ['os', 1900, 'ubnt', null,  null],
+        'Mageia'                 => ['os', 1870, 'mgia', null,  '%^(\d)(?:\.(\d\d?))?%'], // ? mga
+        'PCLinuxOS'              => ['os', 1860, 'pclx', null,  '%pclos(\d+)(?:\.(\d\d?))?%'],
+        'Mandriva/'              => ['os', 1850, 'mndv', null,  '%m(?:dv|ib)(\d+)\.(\d)%'],
+        'Mandriva Linux'         => ['os', 1850, 'mndv', null,  '%m(?:dv|ib)(\d+)\.(\d)%'],
+        'Mandriva '              => ['nx'],
+        'Red HatEnterpriseLinux' => ['os', 1801, 'rhel', null,  '%\.el(\d+)%'],
+        'Red HatEnterprise'      => ['os', 1801, 'rhel', null,  '%\.el(\d+)%'],
+        'Red Hat'                => ['os', 1800, 'rhat', null,  self::REDHAT],
+        'Red '                   => ['nx'],
+        'Debian'                 => ['os', 1700, 'debn', null,  null],
+        'Slackware'              => ['os', 1600, 'slwa', null,  null],
+        'MeeGo'                  => ['os', 1500, 'mego', null,  null, 'm' => 50],
+        'Linux'                  => ['os', 1250, 'lnux', null,  null],
+        'DragonFly'              => ['os', 1010, 'dfly', null,  null],
+        'FreeBSD'                => ['os', 1000, 'fbsd', null,  null],
+        'NetBSD'                 => ['os', 1000, 'ndsd', null,  null],
+        'OpenBSD'                => ['os', 1000, 'obsd', null,  null],
+        'Haiku'                  => ['os',  810, 'haik', null,  null],
+        'BeOS'                   => ['os',  800, 'beos', null,  null],
+        'Bada/'                  => ['os',  750, 'bada', true,  '%^(1|2)\.(\d)%', 'm' => 50],
+        'Bada;'                  => ['os',  750, 'bada', false, null, 'm' => 50],
+        'BB10;'                  => ['os',  500, 'bbos', false, '10', 'm' => 100],
+        'BlackBerry'             => ['os',  500, 'bbos', null,  '%(?<!\d)([1-7]\.\d+)%', 'm' => 100],
+        'Series90/'              => ['os',  262, 's90',  true,  '%^(\d)\.(\d)$%', 'm' => 100],
+        'Series80/'              => ['os',  261, 's80',  true,  '%^(1|2)\.(\d)$%', 'm' => 100],
+        'Series30Plus'           => ['os',  260, 's30p', null,  '', 'm' => 100],
+        'SymbianOS'              => ['os',  252, 'symb', true,  '%^(1?\d)\.(\d[as]?)$%', 'm' => 100],
+        'Series60/'              => ['os',  251, 'symb', true,  self::S60, 'm' => 100],
+        'SymbOS;'                => ['os',  250, 'symb', false, '', 'm' => 100],
+        'SymbianOS;'             => ['os',  250, 'symb', false, '', 'm' => 100],
+        'Symbian'                => ['os',  250, 'symb', null,  '', 'm' => 100],
+        'KAIOS/'                 => ['os',  200, 'kaos', true,  '%^(\d)\.(\d\d?)%', 'm' => 100],
+        'KaiOS/'                 => ['os',  200, 'kaos', true,  '%^(\d)\.(\d\d?)%', 'm' => 100],
+        'J2ME/'                  => ['os',  100, 'java', true,  '%^MIDP%', 'm' => 50],
+        'Profile/'               => ['os',  100, 'java', true,  '%^MIDP%', 'm' => 50],
+        'Configuration/'         => ['os',  100, 'java', true,  '%^CLDC%', 'm' => 50],
+        'X11;'                   => ['os',   50, 'unix', false, null],
+
+        'Mobile'                 => ['', 'm' => 100],
+        'Version/'               => ['', 's' => 'Version'],
+        'wv)'                    => ['', 's' => 'wv'],
+        'rv:'                    => ['', 's' => 'rv'],
+        'SMART-TV'               => ['', 's' => 'SMART-TV'],
+
+        'MsnBot-Media'           => ['ro', 'MsnBot-Media'],
+        'BingPreview'            => ['ro', 'BingPreview'],
+        'Googlebot'              => ['ro', 'Googlebot'],
+        'GoogleBot'              => ['ro', 'Googlebot'],
+        'Googlebot-Mobile'       => ['ro', 'Googlebot'],
+        '360Spider'              => ['ro', '360Spider'],
+        'Mediapartners-Google'   => ['ro', 'Google AdSense'],
+        'bingbot'                => ['ro', 'bingbot'],
+        'YandexBot'              => ['ro', 'YandexBot'],
+        'YandexMobileBot'        => ['ro', 'YandexMobileBot'],
+        'YandexScreenshotBot'    => ['ro', 'YandexScreenshotBot'],
+        'YandexMedianaBot'       => ['ro', 'YandexMedianaBot'],
+        'FlipboardProxy'         => ['ro', 'FlipboardProxy'],
+        'Prerender'              => ['ro', 'Prerender'],
     ];
 
-    protected $browser = [ //   name                      mobile ver      no
-        'Browser'          => [null,                       null, null, 2, null],
-        'UCBrowser'        => ['UC Browser',               null, null, 2, null],
-        'UCWEB'            => ['UC Browser',               null, null, 2, null],
-        'TriCore'          => ['Avant Browser',            null, null, 2, null],
-        'Opera'            => ['Opera',                    null, null, 2, null],
-        'Maxthon'          => ['Maxthon',                  null, null, 2, null],
-        'MxBrowser'        => ['Maxthon',                  null, null, 2, null],
-        'Sleipnir'         => ['Sleipnir',                 null, null, 2, null],
-        'Lunascape'        => ['Lunascape',                null, null, 2, null],
-        'IEMobile'         => ['Internet Explorer Mobile', true, true, 2, null],
-        'Edge'             => ['Microsoft Edge',           null, true, 2, null],
-        'MSIE'             => ['Internet Explorer',        null, true, 2, null],
-        'OPR'              => ['Opera',                    null, true, 2, null],
-        'OPiOS'            => ['Opera for iOS',            null, true, 2, null],
-        'Epiphany'         => ['Epiphany',                 null, true, 2, null],
-        'Chromium'         => ['Chromium',                 null, true, 2, null],
-        'CriOS'            => ['Chrome for iOS',           null, null, 2, null],
-        'Vivaldi'          => ['Vivaldi',                  null, true, 2, null],
-        'YaBrowser'        => ['Yandex Browser',           null, true, 2, null],
-        'QupZilla'         => ['QupZilla',                 null, true, 2, null],
-        'Iron'             => ['SRWare Iron',              null, null, 2, null],
-        'SamsungBrowser'   => ['Samsung Internet',         null, true, 2, null],
-        'Puffin'           => ['Puffin',                   true, true, 2, null],
-        'Konqueror'        => ['Konqueror',                null, null, 2, null],
-        'konqueror'        => ['Konqueror',                null, null, 2, null],
-        'Chrome'           => ['Chrome',                   null, true, 2, null],
-        'FxiOS'            => ['Firefox for iOS',          null, null, 2, null],
-        'Arora'            => ['Arora',                    null, null, 2, null],
-        'Galeon'           => ['Galeon',                   null, null, 2, null],
-        'Otter'            => ['Otter Browser',            null, true, 2, null],
-        'Dooble'           => ['Dooble',                   null, null, 2, null],
-        'NokiaBrowser'     => ['Nokia Browser',            true, null, 2, null],
-        'BrowserNG'        => ['Nokia Browser',            true, null, 2, null],
-        'Flock'            => ['Flock',                    null, null, 2, null],
-        'Iceweasel'        => ['Iceweasel',                null, null, 2, null],
-        'SeaMonkey'        => ['SeaMonkey',                null, null, 2, null],
-        'K-Meleon'         => ['K-Meleon',                 null, null, 2, null],
-        'Camino'           => ['Camino',                   null, true, 2, null],
-        'PaleMoon'         => ['Pale Moon',                null, null, 2, null],
-        'Firefox'          => ['Firefox',                  null, true, 2, 'AppleWebKit'],
-        'Trident'          => ['Internet Explorer',        null, true, 2, null],
-        'Dolfin'           => ['Dolfin',                   null, null, 2, null],
-        'wOSBrowser'       => ['webOS Browser',            null, true, 2, null],
-        'AppleWebKit'      => ['WebKit',                   null, true, 2, 'Gecko'],
-        'Lynx'             => ['Lynx',                     null, null, 2, null],
-        'Links'            => ['Links',                    null, null, 2, null],
-        'ELinks'           => ['ELinks',                   null, null, 2, null],
-        'NetSurf'          => ['NetSurf',                  null, null, 2, null],
-        'NetFront'         => ['NetFront',                 true, true, 2, null],
+    protected $alias = [
+        'adbr' => 'Android Browser',
+        'adwv' => 'Android WebView',
+        'aror' => 'Arora',
+        'avnt' => 'Avant Browser',
+        'bbbr' => 'BlackBerry Browser',
+        'cami' => 'Camino',
+        'cfnw' => 'CFNetwork',
+        'chrm' => 'Chrome',
+        'cios' => 'Chrome for iOS',
+        'chmm' => 'Chromium',
+        'cdrg' => 'Comodo Dragon',
+        'novo' => 'CoolNovo',
+        'dlfn' => 'Dolfin',
+        'dble' => 'Dooble',
+        'elnk' => 'ELinks',
+        'ew3m' => 'Emacs-w3m',
+        'epph' => 'Epiphany',
+        'frfx' => 'Firefox',
+        'fios' => 'Firefox for iOS',
+        'fnnc' => 'Firefox Mobile',
+        'flck' => 'Flock',
+        'galn' => 'Galeon',
+        'haik' => 'Haiku',
+        'icab' => 'iCab',
+        'icwl' => 'Iceweasel',
+        'msie' => 'Internet Explorer',
+        'iemo' => 'Internet Explorer Mobile',
+        'kmln' => 'K-Meleon',
+        'knqr' => 'Konqueror',
+        'lnks' => 'Links',
+        'luna' => 'Lunascape',
+        'lunx' => 'Lynx',
+        'mxth' => 'Maxthon',
+        'edge' => 'Microsoft Edge',
+        'midr' => 'Midori',
+        'mzll' => 'Mozilla', // ?
+        'nfrt' => 'NetFront',
+        'npos' => 'NetPositive',
+        'nsrf' => 'NetSurf',
+        'nobr' => 'Nokia Browser',
+        'ovib' => 'Nokia Ovi Browser',
+        'omni' => 'OmniWeb',
+        'oper' => 'Opera',
+        'opr'  => 'Opera',
+        'oios' => 'Opera for iOS',
+        'opri' => 'Opera Mini',
+        'opro' => 'Opera Mobile',
+        'ottr' => 'Otter Browser',
+        'plmn' => 'Pale Moon',
+        'pffn' => 'Puffin',
+        'qzll' => 'QupZilla',
+        'rkmt' => 'RockMelt',
+        'sfri' => 'Safari',
+        'ssbr' => 'Samsung Internet',
+        'smnk' => 'SeaMonkey',
+        'slnr' => 'Sleipnir',
+        'iron' => 'SRWare Iron',
+        'tzmo' => 'Tizen Mobile Web Application',
+        'tztv' => 'Tizen TV Web Application',
+        'ucbr' => 'UC Browser',
+        'viva' => 'Vivaldi',
+        'w3m'  => 'w3m',
+        'wsbr' => 'webOS Browser',
+        'wpos' => 'WebPositive',
+        'yabr' => 'Yandex Browser',
+
+        'geck' => 'Gecko (layout engine)',
+        'goan' => 'Goanna (layout engine)',
+        'prst' => 'Presto (layout engine)',
+        'trnt' => 'Trident (layout engine)',
+        'wbkt' => 'WebKit (layout engine)',
+
+        'andr' => 'Android',
+        'bada' => 'Bada',
+        'bbos' => 'BlackBerry OS',
+        'beos' => 'BeOS',
+        'cnos' => 'CentOS',
+        'cros' => 'Chrome OS',
+        'darw' => 'Darwin',
+        'debn' => 'Debian',
+        'dfly' => 'DragonFly BSD',
+        'fdra' => 'Fedora',
+        'ffos' => 'Firefox OS',
+        'fbsd' => 'FreeBSD',
+        'ios'  => 'iOS',
+        'java' => 'Java',
+        'kaos' => 'KaiOS',
+        'kbnt' => 'Kubuntu',
+        'lnux' => 'Linux',
+        'mint' => 'Linux Mint',
+        'mac'  => 'Mac',
+        'osx'  => 'Mac OS X',
+        'mndv' => 'Mandriva Linux',
+        'mgia' => 'Mageia',
+        'mego' => 'MeeGo',
+        'ndsd' => 'NetBSD',
+        'obsd' => 'OpenBSD',
+        'suse' => 'openSUSE',
+        'pclx' => 'PCLinuxOS',
+        'rhat' => 'Red Hat',
+        'rhel' => 'Red Hat Enterprise Linux',
+        'remx' => 'Remix OS',
+        's30p' => 'Series 30+',
+        's80'  => 'Series 80',
+        's90'  => 'Series 90',
+        'slwa' => 'Slackware',
+        'symb' => 'Symbian OS',
+        'tizn' => 'Tizen',
+        'ubnt' => 'Ubuntu',
+        'unix' => 'Unix',
+        'wbos' => 'webOS',
+        'win'  => 'Windows',
+        'winc' => 'Windows CE',
+        'winm' => 'Windows Mobile',
+        'winp' => 'Windows Phone',
+        'xbnt' => 'Xubuntu',
     ];
 
-    protected $windowsnt = [
-        '4.0'  => 'NT 4.0',
-        '5.0'  => '2000',
-        '5.01' => '2000',
-        '5.1'  => 'XP',
-        '5.2'  => 'XP',
-        '6.0'  => 'Vista',
-        '6.1'  => '7',
-        '6.2'  => '8',
-        '6.3'  => '8.1',
-        '6.4'  => '10',
-        '10.0' => '10',
+    protected $fix = [
+        'andrchrm' => 'fixAndroidWV',
+        'andrwbkt' => 'fixAndroidBR',
+        'bbos'     => 'fixBBBR',
+        'bboswbkt' => 'fixBBBRkit',
+        'lnuxchrm' => 'fixLinuxWV',
+        'lnuxpffn' => 'fixPuffinOS',
+        'tiznwbkt' => 'fixTizenBR',
     ];
 
     protected $firefoxos = [
@@ -168,20 +453,23 @@ class UserAgentAnalyzer
         '44.0' => '2.5',
     ];
 
-    protected $trident = [
-        '4.0' => '8.0',
-        '5.0' => '9.0',
-        '6.0' => '10.0',
-        '7.0' => '11.0',
+    protected $puffin = [
+        'IP' => ['ios',  1],
+        'IT' => ['ios',  1],
+        'AP' => ['andr', 1],
+        'AT' => ['andr', 1],
+        'WP' => ['winp', 1],
+        'WD' => ['win',  0],
     ];
 
-    protected $puffin = [
-        'IP' => ['iOS',           true],
-        'IT' => ['iOS',           true],
-        'AP' => ['Android',       true],
-        'AT' => ['Android',       true],
-        'WP' => ['Windows Phone', true],
-        'WD' => ['Windows',       false],
+    protected $botSize;
+    protected $botTest = [
+        'crawler' => 100,
+        'nutch'   => 100,
+        'spider'  => 60,
+        'bot'     => 50,
+        'preview' => 50,
+        'search'  => 40,
     ];
 
     public function analyse($ua = null)
@@ -196,8 +484,12 @@ class UserAgentAnalyzer
             }
         }
 
-        $this->ua     = $ua;
-        $this->result = [
+        $botCheck      = [];
+        $uaLC          = \strtolower($ua);
+        $uaIn          = $ua;
+        $this->ua      = $ua;
+        $this->botSize = 0;
+        $this->result  = [
             'isMobile'       => null,
             'isRobot'        => null,
             'botName'        => null,
@@ -208,128 +500,76 @@ class UserAgentAnalyzer
             'osVersion'      => null,
         ];
 
-        $prob    = 0;
-        $uaLC    = \strtolower($ua);
-        $uaIn    = $ua;
-        $bot     = \strpos($uaLC, 'bot');
-        $spider  = \strpos($uaLC, 'spider');
-        $crawler = \strpos($uaLC, 'crawler');
-        $preview = \strpos($uaLC, 'preview');
-        $mozilla = \strpos($uaLC, 'mozilla');
+        foreach ($this->botTest as $key => $size) {
+            $pos = \strpos($uaLC, $key);
+            if (false !== $pos) {
+                $this->botSize += $size;
+                $botCheck[$key] = $pos;
+            }
+        }
 
-        if ((false !== $bot && false === \strpos($ua, 'CUBOT'))
-            || (false !== $spider && false === \strpos($ua, 'GLX Spider'))
-            || false !== $crawler
-            || false !== $preview
-        ) {
-            $prob += 1;
-        }
-        if (false !== \strpos($uaLC, 'search')) {
-            $prob += 0.4;
-        }
         if (false !== \strpos($uaLC, 'http')) {
-            $uaIn  = \preg_replace('%https?:[^);]*[);]?%i', ' ', $uaIn, -1, $count);
-            $prob += 0.4 * $count;
+            $uaIn = \preg_replace('%https?:[^);\s]*[);]?%i', ' ', $uaIn, -1, $count);
+            $this->botSize += 40 * $count;
         }
         if (false !== \strpos($uaIn, 'www.')) {
-            $uaIn  = \preg_replace('%www\.[^)]*[);]?%i', ' ', $uaIn, -1, $count);
-            $prob += 0.4 * $count;
+            $uaIn = \preg_replace('%www\.[^);\s]*[);]?%i', ' ', $uaIn, -1, $count);
+            $this->botSize += 40 * $count;
         }
         if (false !== \strpos($uaIn, '@')) {
-            $uaIn  = \preg_replace('%[^\s/;()]+@[^);]*[);]?%i', ' ', $uaIn, -1, $count);
-            $prob += 0.4 * $count;
-        }
-        if (false !== $mozilla
-            && false === \strpos($ua, 'Gecko')
-            && (false === \strpos($ua, '(compatible; MSIE ') || false === \strpos($ua, 'Windows'))
-        ) {
-            $prob += 0.3;
+            $uaIn = \preg_replace('%[^\s/;()@]+@[^);\s]*[);]?%i', ' ', $uaIn, -1, $count);
+            $this->botSize += 40 * $count;
         }
         if (false !== \strpos($uaLC, 'like')) {
             $uaIn = \preg_replace('%\blike[^()]*(?:\([^)]*\)[^()]*)*%i', '', $uaIn);
         }
 
-        if ($prob < 1) {
-            $this->details($uaIn);
+        $data = $this->details($uaIn);
 
-            foreach (['os', 'browser'] as $type) {
-                foreach ($this->$type as $key => $data) {
-                    if (! isset($this->details[$key])
-                        || (true === $data[2] && '' == $this->details[$key])
-                    ) {
-                        continue;
-                    }
-                    if (null !== $data[3]) {
-                        $args = \explode(',', $data[4]);
-                        if (null !== $this->getValue(...$args)) {
-                            continue;
-                        }
-                    }
-
-                    $data['v'] = $this->details[$key];
-                    $method    = \str_replace(' ', '', $key);
-
-                    if (\method_exists($this, $method)) {
-                        $data = $this->{$method}($data, $key);
-                        if (false === $data) {
-                            continue;
-                        }
-                    }
-
-                    $this->result[$type . 'Name'] = $data[0];
-                    if (null !== $data[1]) {
-                        $this->result['isMobile'] = $data[1];
-                    }
-                    if (! empty($data['v'])) {
-                        if ($data[3]) {
-                            if (\preg_match('%^(\d+)(?:[._]([\dx]+)(?:[._]([\dx]+))?)?%i', $data['v'], $match)) {
-                                $this->result[$type . 'Version'] = \implode('.', \array_slice($match, 1, $data[3]));
-                            }
-                        } else {
-                            $this->result[$type . 'Version'] = $data['v'];
-                        }
-                    }
-
-                    break;
+        if ($this->botSize < 100) {
+            if (isset($this->alias[$data['os'][1]])) {
+                $this->result['osName']    = $this->alias[$data['os'][1]];
+                $this->result['osVersion'] = $data['os'][2];
+            } else {
+                $this->botSize += 60;
+            }
+            if ($this->botSize < 100) {
+                if (isset($this->alias[$data['br'][1]])) {
+                    $this->result['browserName']    = $this->alias[$data['br'][1]];
+                    $this->result['browserVersion'] = $data['br'][2];
+                } else {
+                    $this->botSize += 30;
                 }
+                if ($this->botSize < 100) {
+                    $this->result['isMobile'] = $data['m'] >= 100;
 
-                if (null === $this->result[$type . 'Name']) {
-                    $prob += 0.5;
-                    if ($prob >= 1) {
-                        break;
-                    }
+                    return $this->result;
                 }
             }
-        }
-
-        if ($prob < 1) {
-            $this->result['isRobot'] = false;
-#            $this->result['details'] = $this->details;
-            if (true !== $this->result['isMobile']) {
-                if (null !== $this->getValue('Mobile', 'Tablet')) {
-                    $this->result['isMobile'] = true;
-                }
-            } elseif (null !== $this->getValue('SMART-TV', 'TV')) {
-                $this->result['isMobile'] = false;
-            }
-
-            return $this->result;
         }
 
         $this->result['isRobot'] = true;
 
-        if (false !== $bot && \preg_match('%[^;()]*bot[a-z\d\.!_-]*%i', $uaIn, $match)) {
-            $uaIn = $match[0];
-        } elseif (false !== $spider && \preg_match('%[^;()]*spider[a-z\d\.!_-]*%i', $uaIn, $match)) {
-            $uaIn = $match[0];
-        } elseif (false !== $crawler && \preg_match('%[^;()]*crawler[a-z\d\.!_-]*%i', $uaIn, $match)) {
-            $uaIn = $match[0];
-        } elseif (false !== $preview && \preg_match('%[^;()]*preview[a-z\d\.!_-]*%i', $uaIn, $match)) {
-            $uaIn = $match[0];
-        } elseif (false !== $mozilla) {
-            $uaIn = \preg_replace('%Mozilla.*?compatible[; ]*%i', ' ', $uaIn);
-        } elseif (false !== \strpos($uaLC, 'docomo')) {
-            $uaIn = \preg_replace('%DoCoMo.*?compatible[; ]*%i', ' ', $uaIn);
+        if (\is_string($data)) {
+            $data = \explode('|', $data, 2);
+            $this->result['botName'] = $data[0];
+            if (isset($data[1]{0})) {
+                $this->result['botVersion'] = $data[1];
+            }
+            return $this->result;
+        }
+
+        \asort($botCheck, \SORT_NUMERIC);
+
+        foreach ($botCheck as $key => $size) {
+            if (\preg_match('%[^;()]*' . $key . '[a-z\d\.!_-]*%i', $uaIn, $match)) {
+                $uaIn = $match[0];
+                break;
+            }
+        }
+        if (empty($match[0])) {
+            $uaIn = \preg_replace('%Mozilla.*?compatible[); ]*%i', ' ', $uaIn);
+            $uaIn = \preg_replace('%DoCoMo.*?compatible[); ]*%i', ' ', $uaIn);
         }
 
         $uaIn = \trim(\preg_replace($this->clean, ' ', $uaIn), ' ._-');
@@ -342,7 +582,6 @@ class UserAgentAnalyzer
         }
 
         $this->result['botName'] = $uaIn;
-#        $this->result['details'] = $this->details;
 
         return $this->result;
     }
@@ -351,40 +590,193 @@ class UserAgentAnalyzer
     {
         \preg_match_all($this->pattern, $ua, $matches, \PREG_SET_ORDER);
 
-        $cur = null;
+        $data = [
+            'f'  => 0,
+            'm'  => 0,
+            'br' => [-1, null, null],
+            'os' => [-1, null, null],
+        ];
+        $prev = '';
+
         foreach ($matches as $m) {
-            if (! empty($m[1])) {
-                if (isset($m[5])) {
-                    $next  = $m[5];
-                    $value = $m[5];
-                } elseif (isset($m[3])) {
-                    $next  = $m[3] . $m[4];
-                    $value = $m[3] . $m[4];
-                } else {
-                    $next  = null;
-                    $value = $m[2];
+            $name = null;
+            $tmp  = $prev . $m[1];
+
+            do {
+                if (isset($m[5]{0}, $this->raw[$tmp . $m[2] . $m[3] . $m[4] . $m[5]])) {
+                    $name   = $tmp . $m[2] . $m[3] . $m[4] . $m[5];
+                    $v4     = false;
+                    $ending = '';
+                    break;
+                } elseif (isset($m[4]{0}, $this->raw[$tmp . $m[2] . $m[3] . $m[4]])) {
+                    $name   = $tmp . $m[2] . $m[3] . $m[4];
+                    $v4     = false;
+                    $ending = '';
+                    break;
+                } elseif (isset($m[3]{0}, $this->raw[$tmp . $m[2] . $m[3]])) {
+                    $name   = $tmp . $m[2] . $m[3];
+                    $v4     = true;
+                    $ending = '';
+                    break;
+                } elseif (isset($m[2]{0}, $this->raw[$tmp . $m[2]])) {
+                    $name   = $tmp . $m[2];
+                    $v4     = true;
+                    $ending = $m[3];
+                    break;
+                } elseif (isset($this->raw[$tmp])) {
+                    $name   = $tmp;
+                    $v4     = true;
+                    $ending = $m[2] . $m[3];
+                    break;
                 }
-            } elseif (isset($m[5])) {
-                $cur   = null;
-                $next  = $m[5];
-                $value = '';
-            } elseif (isset($m[3])) {
-                $cur   = rtrim($m[3], '-_.');
-                $next  = $m[3] . $m[4];
-                $value = $m[4];
-            } else {
-                $next  = null;
-                $value = $m[2];
+            } while (isset($prev{0}) && ! $prev = '');
+
+            if (null === $name) {
+                continue;
             }
 
-            if ($cur && empty($this->details[$cur])) {
-                $this->details[$cur] = $value;
+            $raw = $this->raw[$name];
+
+            if (isset($raw['f'])) {
+                $data['f'] += $raw['f'];
             }
-            $cur = $next;
-            if ($cur && ! isset($this->details[$cur])) {
-                $this->details[$cur] = '';
+
+            if (isset($raw['m'])) {
+                $data['m'] += $raw['m'];
+            }
+
+            if ($v4 && isset($m[4]{0})) {
+                $version = $m[4];
+                $tmp     = $m[5];
+            } else {
+                $version = null;
+                $tmp     = '';
+            }
+            if (isset($m[6]{0})) {
+                $version .= $tmp . $m[6];
+            } elseif (isset($m[7]{0})) {
+                $version .= $tmp . $m[7];
+            }
+
+            if (isset($version{0}) || isset($this->stop[$m[5]])) {
+                $prev = '';
+            } else {
+                $prev = $name;
+            }
+
+            if (isset($ending{0}) && empty($raw['ending'])) {
+                $prev = '';
+                $data['f'] += 0.1;
+                continue;
+            }
+
+            if (isset($raw['s'])) {
+                $this->details[$raw['s']] = (string) $version;
+            }
+
+            switch ($raw[0]) {
+                case 'ro':
+                    $this->botSize = 100;
+                    return $raw[1] . '|' . $version;
+                case 'br':
+                case 'os':
+                    $type = $raw[0];
+                    break;
+                default:
+                    continue 2;
+            }
+
+            if (null === $version && true === $raw[3]) {
+                $data['f'] += 0.2;
+                continue;
+            } elseif (false === $raw[3] && isset($version)) {
+                $data['f'] += 0.1;
+            }
+
+            if (isset($raw[4]{0}) && '%' === $raw[4]{0}) {
+                $vs = [
+                    $raw[4] => null,
+                ];
+            } else {
+                $vs = $raw[4];
+            }
+
+            $merge = null;
+
+            if (\is_array($vs)) {
+                $ver = null;
+
+                foreach ($vs as $key => $val) {
+                    if ('*' === $key) {
+                        $ver   = $version;
+                        $merge = $val;
+                        break;
+                    } elseif ('%' === $key{0}) {
+                        if (\preg_match($key, $version, $match)) {
+                            unset($match[0]);
+                            $ver   = \implode('.', $match);
+                            $merge = $val;
+                            break;
+                        }
+                    } elseif ($key == $version) { // ?
+                        $merge = $val;
+                        break;
+                    }
+                }
+            } elseif (isset($vs{0})) {
+                $ver = $vs;
+            } else {
+                $ver = $version;
+            }
+
+            if (\is_string($merge)) {
+                $ver = $merge;
+            } elseif (\is_array($merge)) {
+                if (isset($merge[3])) { // handler
+                    $data = $this->{$merge[3]}($data, $ver);
+                }
+                if (isset($merge[2])) { // version
+                    $ver = $merge[2];
+                }
+                if (isset($merge[1])) { // code
+                    $raw[2] = $merge[1];
+                }
+                if (isset($merge[0])) { // weight
+                    $raw[1] = $merge[0];
+                }
+            }
+
+            if (null === $ver && true === $raw[3]) {
+                $data['f'] += 0.2;
+                continue;
+            }
+
+            if ($raw[1] >= $data[$type][0]) {
+                $data[$type][0] = $raw[1];
+
+                if (isset($ver{0}) || $data[$type][1] !== $raw[2]) {
+                    $data[$type][2] = $ver;
+                }
+
+                $data[$type][1] = $raw[2];
             }
         }
+
+        $fix = $data['os'][1] . $data['br'][1];
+
+        if (isset($this->fix[$fix])) {
+            $data = $this->{$this->fix[$fix]}($data);
+        }
+
+        foreach (['br', 'os'] as $type) {
+            if (isset($data[$type][1])
+                && \method_exists($this, $data[$type][1])
+            ) {
+                $data = $this->{$data[$type][1]}($data);
+            }
+        }
+
+        return $data;
     }
 
     protected function getValue(...$args)
@@ -409,299 +801,163 @@ class UserAgentAnalyzer
     }
 
     /**
-     * Windows NT
+     * set Firefox OS
      */
-    protected function WindowsNT(array $data, $name)
+    protected function handlerFFOS(array $data, $version)
     {
-        if (isset($this->windowsnt[$data['v']])) {
-            $data['v'] = $this->windowsnt[$data['v']];
-            return $data;
+        if (empty($data['os'][1]) && ! empty($this->details['rv']) && isset($this->firefoxos[$version])) {
+            $data['os'][1] = 'ffos';
+            $data['os'][2] = $this->firefoxos[$version];
+        }
+        return $data;
+    }
+
+    /**
+     * fix BlackBerry OS -> BlackBerry Browser
+     */
+    protected function fixBBBR(array $data)
+    {
+        $data['br'][1] = 'bbbr';
+        $data['br'][2] = $data['os'][2];
+        return $data;
+    }
+
+    /**
+     * fix WebKit -> BlackBerry Browser
+     */
+    protected function fixBBBRkit(array $data)
+    {
+        $data['br'][1] = 'bbbr';
+        $data['br'][2] = isset($this->details['Version']) ? $this->details['Version'] : null;
+        return $data;
+    }
+
+    /**
+     * fix Chrome -> Android WebView
+     */
+    protected function fixAndroidWV(array $data) {
+        if (! empty($this->details['Version'])) {
+            $data['br'][1] = 'adwv';
+            $data['br'][2] = $this->details['Version'];
+        } elseif (isset($this->details['wv'])) {
+            $data['br'][1] = 'adwv';
+            $data['br'][2] = null;
+        }
+        return $data;
+    }
+
+    /**
+     * fix Chrome -> Android WebView
+     */
+    protected function fixLinuxWV(array $data) {
+        if (! empty($this->details['Version'])) {
+            $data['br'][1] = 'adwv';
+            $data['br'][2] = $this->details['Version'];
+            $data['f']    += 0.1;
+            $data['os'][1] = 'andr';
+            $data['os'][2] = null;
+        } elseif (isset($this->details['wv'])) {
+            $data['br'][1] = 'adwv';
+            $data['br'][2] = null;
+            $data['f']    += 0.1;
+            $data['os'][1] = 'andr';
+            $data['os'][2] = null;
+        }
+        return $data;
+    }
+
+    /**
+     * fix Linux -> iOS, Android or Windows
+     */
+    protected function fixPuffinOS(array $data)
+    {
+        if (\preg_match('%[AIW][PTD]%', $this->details['Puffin'], $match) && isset($this->puffin[$match[0]])) {
+            $data['os'][1] = $this->puffin[$match[0]][0];
+            $data['os'][2] = null;
+            $data['m']     = $this->puffin[$match[0]][1];
+        }
+        return $data;
+    }
+
+    /**
+     * fix WebKit -> Android Browser ?
+     */
+    protected function fixAndroidBR(array $data)
+    {
+        $data['br'][1] = 'adbr';
+        $data['br'][2] = isset($this->details['Version']) ? $this->details['Version'] : null;
+        return $data;
+    }
+
+    /**
+     * fix WebKit -> Tizen Mobile/TV Web Application
+     */
+    protected function fixTizenBR(array $data)
+    {
+        if (null === $this->getValue('SMART-TV', 'TV')) {
+            $data['br'][1] = 'tzmo';
         } else {
-            return false;
+            $data['br'][1] = 'tztv';
+            $data['m']     = 0;
         }
-    }
-
-    /**
-     * Windows Phone, Windows Mobile, Windows
-     */
-    protected function Windows(array $data, $name)
-    {
-        if (null !== ($v = $this->getValue('Phone OS', 'Phone'))) {
-            $data[0]   = 'Windows Phone';
-            $data[1]   = true;
-            $data['v'] = $v;
-        } elseif (false !== \strpos($this->ua, 'Windows Mobile')) {
-            $data[0]   = 'Windows Mobile';
-            $data[1]   = true;
-        } elseif (! \in_array($data['v'], ['95', '98'])) {
-            $data['v'] = null;
-        } elseif ('98' === $data['v'] && '4.90' === $this->getValue('9x')) {
-            $data['v'] = 'ME';
-        }
+        $data['br'][2] = isset($this->details['Version']) ? $this->details['Version'] : null;
         return $data;
     }
 
-    /**
-     * iPad iOS
-     */
-    protected function iPad(array $data, $name)
-    {
-        $data['v'] = $this->getValue('iPhone OS', 'CPU OS', true);
-        return $data;
-    }
-
-    /**
-     * iPod iOS
-     */
-    protected function iPod(array $data, $name)
-    {
-        $data['v'] = $this->getValue('iPhone OS', 'CPU OS', true);
-        return $data;
-    }
-
-    /**
-     * iPhone iOS
-     */
-    protected function iPhone(array $data, $name)
-    {
-        $data['v'] = $this->getValue('iPhone OS', 'CPU OS', true);
-        return $data;
-    }
-
-    /**
-     * Mac OS X
-     */
-    protected function MacOSX(array $data, $name)
-    {
-        $data['v'] = $data['v'];
-        return $data;
-    }
 
     /**
      * Chrome OS
      */
-    protected function CrOS(array $data, $name)
+    protected function cros(array $data)
     {
-        if (null !== ($v = $this->getValue('Chrome', true))) {
-            $data['v'] = $v;
-        }
-        return $data;
-    }
-
-    /**
-     * CentOS
-     */
-    protected function CentOS(array $data, $name)
-    {
-        if (\preg_match('%\.el(\d+)[^\s;/]*\.centos%', $data['v'], $match)) {
-            $data['v'] = $match[1];
-        } else {
-            $data['v'] = null;
-        }
-        return $data;
-    }
-
-    /**
-     * Fedora
-     */
-    protected function Fedora(array $data, $name)
-    {
-        if (\preg_match('%\.fc\K\d+%', $data['v'], $match)) {
-            $data['v'] = $match[0];
-        } else {
-            $data['v'] = null;
-        }
-        return $data;
-    }
-
-    /**
-     * Red Hat, Red Hat Enterprise Linux
-     */
-    protected function Hat(array $data, $name)
-    {
-        if (! isset($this->details['Red'])) {
-            return false;
-        }
-        if (\preg_match('%\.el\K\d+%', $this->ua, $match)) {
-            $data[0]  .= ' Enterprise Linux';
-            $data['v'] = $match[0];
-        }
-        return $data;
-    }
-
-    /**
-     * BlackBerry OS
-     */
-    protected function BlackBerry(array $data, $name)
-    {
-        if (! empty($this->details[$name . $data['v']])) {
-            $data['v'] = $this->details[$name . $data['v']];
-        } elseif ($data['v'] > 999) {
-            $data['v'] = null;
-        }
-        return $data;
-    }
-
-    /**
-     * Symbian OS
-     */
-    protected function Series(array $data, $name)
-    {
-        if (\in_array($data['v'], ['40', '60', '80'])) {
-            $data['v'] = null;
-            return $data;
-        }  else {
-            return false;
-        }
-    }
-
-    /**
-     * Java
-     */
-    protected function Profile(array $data, $name)
-    {
-        if ('MIDP' == \substr($data['v'], 0, 4)) {
-            $data['v'] = null;
-            return $data;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Java
-     */
-    protected function J2ME(array $data, $name)
-    {
-        return $this->Profile($data, $name);
-    }
-
-    /**
-     * Firefox OS
-     */
-    protected function Gecko(array $data, $name)
-    {
-        if (! empty($this->details['rv'])
-            && ! empty($this->details['Firefox'])
-            && isset($this->firefoxos[$data['v']])
-        ) {
-            $data['v'] = $this->firefoxos[$data['v']];
-            return $data;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * UC Browser, Avant Browser
-     */
-    protected function Browser(array $data, $name)
-    {
-        if (isset($this->details['UC'])) {
-            $data[0] = 'UC Browser';
-        } elseif (isset($this->details['Avant'])) {
-            $data[0] = 'Avant Browser';
-        } else {
-            return false;
-        }
-        return $data;
-    }
-
-    /**
-     * Opera, Opera Mini, Opera Mobi
-     */
-    protected function Opera(array $data, $name)
-    {
-        $v = empty($this->details['Version']) ? null : $this->details['Version'];
-
-        if (isset($this->details['Mobi'])) {
-            $data[0]   = 'Opera Mobile';
-            $data[1]   = true;
-            $data['v'] = $v ?: $data['v'];
-        } elseif (isset($this->details['Mini'])) {
-            $data[0]   = 'Opera Mini';
-            $data['v'] = $this->details['Mini'];
-        } elseif ('9.80' == $data['v'] && $v) {
-            $data['v'] = $v;
-        }
-        return $data;
-    }
-
-    /**
-     * Puffin: https://www.puffinbrowser.com/help/trouble.php#it
-     */
-    protected function Puffin(array $data, $name)
-    {
-        if (\preg_match('%\bPuffin[^A-KN-Z\s]+\K[AIW][PTD]%', $this->ua, $match) && isset($this->puffin[$match[0]])) {
-            if ('Linux' === $this->result['osName']) {
-                $this->result['osName'] = $this->puffin[$match[0]][0];
+        if (isset($this->details['Chrome'])) {
+            if (\preg_match('%^\d\d?\.\d\d?%', $this->details['Chrome'], $match)) {
+                $data['os'][2] = $match[0];
             }
-            $data[1] = $this->puffin[$match[0]][1];
+        } else {
+            $data['f'] += 0.5;
         }
         return $data;
     }
 
     /**
-     * Chrome, Android WebView
+     * Opera
      */
-    protected function Chrome(array $data, $name)
+    protected function oper(array $data)
     {
-        if ('Android' === $this->result['osName']) {
-            if (! empty($this->details['Version'])) {
-                $data[0]   = 'Android WebView';
-                $data['v'] = $this->details['Version'];
-            } elseif (isset($this->details['wv'])) {
-                $data[0]   = 'Android WebView';
-                $data['v'] = null;
+        if (isset($this->details['Version'])) {
+            if ($this->details['Version'] >= 10 && $this->details['Version'] < 13) {
+                $data['br'][2] = $this->details['Version'];
+            } else {
+                $data['f'] += 0.5;
             }
         }
         return $data;
     }
 
     /**
-     * IE
+     * Opera Mobi
      */
-    protected function Trident(array $data, $name)
+    protected function opro(array $data)
     {
-        if (isset($this->trident[$data['v']])) {
-            $data['v'] = $this->trident[$data['v']];
-            return $data;
+        $v = $this->getValue('Version', 'Opera', true);
+        if ($v < 13) { // NULL in $v
+            $data['br'][2] = $v;
         } else {
-            return false;
+            $data['f']    += 0.5;
+            $data['br'][2] = null;
         }
+        return $data;
     }
 
     /**
-     * Safari, Android Browser(?), BlackBerry Browser,
-     * Samsung Internet: http://developer.samsung.com/internet/user-agent-string-format
+     * Safari
      */
-    protected function AppleWebKit(array $data, $name)
+    protected function wbkt(array $data)
     {
-        $v = $this->getValue('Version', true);
-
-        switch ($this->result['osName']) {
-            case 'Android':
-                $data[0]   = 'Android Browser';
-                $data['v'] = $v;
-                break;
-            case 'BlackBerry OS':
-                $data[0]   = 'BlackBerry Browser';
-                $data['v'] = $v;
-                break;
-            case 'Tizen':
-                if (null === $this->getValue('SMART-TV', 'TV')) {
-                    $data[0] = 'Tizen Mobile Web Application';
-                } else {
-                    $data[0] = 'Tizen TV Web Application';
-                    $data[1] = false;
-                }
-                $data['v'] = $v;
-                break;
-            default:
-                if ($v) {
-                    $data[0] = 'Safari';
-                    $data['v'] = $v;
-                }
+        if (! empty($this->details['Version'])) {
+            $data['br'][1] = 'sfri';
+            $data['br'][2] = $this->details['Version'];
         }
         return $data;
     }
