@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '2.0000';
+    const VERSION = '2.0001';
 
     const WINNT = [
         '4.0'  => 'NT 4.0',
@@ -308,8 +308,11 @@ class UserAgentAnalyzer
         'YandexMobileBot'        => ['ro', 'YandexMobileBot'],
         'YandexScreenshotBot'    => ['ro', 'YandexScreenshotBot'],
         'YandexMedianaBot'       => ['ro', 'YandexMedianaBot'],
+        'YandexBlogs'            => ['ro', 'YandexBlogs'],
         'FlipboardProxy'         => ['ro', 'FlipboardProxy'],
         'Prerender'              => ['ro', 'Prerender'],
+        'Applebot'               => ['ro', 'Applebot'],
+        'Diffbot'                => ['ro', 'Diffbot'],
     ];
 
     protected $alias = [
@@ -466,6 +469,7 @@ class UserAgentAnalyzer
     protected $botTest = [
         'crawler' => 100,
         'nutch'   => 100,
+        'robot'   => 100,
         'spider'  => 60,
         'bot'     => 50,
         'preview' => 50,
