@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '2.0002';
+    const VERSION = '2.0004';
 
     const WINNT = [
         '4.0'  => 'NT 4.0',
@@ -226,11 +226,11 @@ class UserAgentAnalyzer
         'iPod;'                  => ['os', 8010, 'ios',  false, null, 'm' => 100],
         'CPU '                   => ['nx'],
         'CPU iPhone '            => ['nx'],
-        'CPU iPhone OS '         => ['os', 8010, 'ios',  true, '%^(1?\d)[._](\d)(?:[._]\d)?$%'],
-        'CPU OS '                => ['os', 8010, 'ios',  true, '%^(1?\d)[._](\d)(?:[._]\d)?$%'],
+        'CPU iPhone OS '         => ['os', 8010, 'ios',  true, '%^(1?\d)[._](\d\d?)(?:[._]\d\d?)?$%'],
+        'CPU OS '                => ['os', 8010, 'ios',  true, '%^(1?\d)[._](\d\d?)(?:[._]\d\d?)?$%'],
         'Mac '                   => ['nx'],
-        'Mac OS '                => ['os', 8010, 'mac',  true, '%^(1?\d)[._](\d)(?:[._]\d)?$%'],
-        'Mac OS X '              => ['os', 8010, 'osx',  true, '%^(1?\d)[._](\d)(?:[._]\d)?$%', 'f' => -0.2],
+        'Mac OS '                => ['os', 8010, 'mac',  true, '%^(1?\d)[._](\d\d?)(?:[._]\d\d?)?$%'],
+        'Mac OS X '              => ['os', 8010, 'osx',  true, '%^(1?\d)[._](\d\d?)(?:[._]\d\d?)?$%', 'f' => -0.2],
         'Mac OS X;'              => ['os', 8010, 'osx',  false, null, 'f' => -0.2],
         'Mac OS X Mach-O;'       => ['os', 8010, 'osx',  false, null, 'f' => -0.2],
         'Darwin/'                => ['os', 8001, 'darw', true,  null],
@@ -312,6 +312,7 @@ class UserAgentAnalyzer
         'YandexMedianaBot'       => ['ro', 'YandexMedianaBot'],
         'YandexBlogs'            => ['ro', 'YandexBlogs'],
         'FlipboardProxy'         => ['ro', 'FlipboardProxy'],
+        'FlipboardBrowserProxy'  => ['ro', 'FlipboardProxy'],
         'Prerender'              => ['ro', 'Prerender'],
         'Applebot'               => ['ro', 'Applebot'],
         'Diffbot'                => ['ro', 'Diffbot'],
@@ -471,13 +472,12 @@ class UserAgentAnalyzer
 
     protected $botSize;
     protected $botTest = [
-        'crawler' => 100,
-        'nutch'   => 100,
-        'robot'   => 100,
-        'spider'  => 60,
-        'bot'     => 50,
-        'preview' => 50,
-        'search'  => 40,
+        'crawl'   => [100, null],
+        'nutch'   => [100, null],
+        'bot'     => [100, '%(?<!cu)bot(?!tle)%'],
+        'spider'  => [100, '%spider(?![\w\ ]*build/)%'],
+        'preview' => [ 50, null],
+        'search'  => [ 40, null],
     ];
 
     public function analyse($ua = null)
@@ -508,10 +508,12 @@ class UserAgentAnalyzer
             'osVersion'      => null,
         ];
 
-        foreach ($this->botTest as $key => $size) {
+        foreach ($this->botTest as $key => $info) {
             $pos = \strpos($uaLC, $key);
-            if (false !== $pos) {
-                $this->botSize += $size;
+            if (false !== $pos
+                && (null === $info[1] || \preg_match($info[1], $uaLC))
+            ) {
+                $this->botSize += $info[0];
                 $botCheck[$key] = $pos;
             }
         }
