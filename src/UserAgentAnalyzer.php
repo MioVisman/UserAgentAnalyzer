@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '2.0001';
+    const VERSION = '2.0002';
 
     const WINNT = [
         '4.0'  => 'NT 4.0',
@@ -120,8 +120,8 @@ class UserAgentAnalyzer
     ];
 
     protected $raw = [ //              0     1      2      3     4
-        'UCBrowser'              => ['br', 9001, 'ucbr', null,  '%^(\d\d?)\.(\d\d?)(?:\.\d+)*$%'],
-        'UC Browser'             => ['br', 9001, 'ucbr', null,  '%^(\d\d?)\.(\d\d?)(?:\.\d+)*$%'],
+        'UCBrowser'              => ['br', 9001, 'ucbr', null,  '%^(\d\d?)\.(\d\d?)%'],
+        'UC Browser'             => ['br', 9001, 'ucbr', null,  '%^(\d\d?)\.(\d\d?)%'],
         'UC '                    => ['nx'],
         'UCWEB'                  => ['br', 9000, 'ucbr', null,  ''],
 // ?    'U3/'          /* !!! */ =>
@@ -152,6 +152,8 @@ class UserAgentAnalyzer
         'Konqueror'              => ['br', 4200, 'knqr', null,  '%^(1?\d)\.(\d\d?)%'],
         'konqueror'              => ['br', 4100, 'knqr', null,  '%^(1?\d)\.(\d\d?)%'],
         'Epiphany/'              => ['br', 4000, 'epph', true,  '%^(\d)\.(\d\d?)(?:\.\d+)*$%'],
+
+        'FBAN/'                  => ['br', 3990, 'fban', true,  ''],
 
         'Midori/'                => ['br', 3500, 'midr', true,  '%^(0)\.(\d\d?)%'],
         'Comodo_Dragon/'         => ['br', 3400, 'cdrg', true,  '%^(\d\d?)\.(\d\d?)%'],
@@ -333,6 +335,7 @@ class UserAgentAnalyzer
         'elnk' => 'ELinks',
         'ew3m' => 'Emacs-w3m',
         'epph' => 'Epiphany',
+        'fban' => 'Facebook App',
         'frfx' => 'Firefox',
         'fios' => 'Firefox for iOS',
         'fnnc' => 'Firefox Mobile',
@@ -376,6 +379,7 @@ class UserAgentAnalyzer
         'tzmo' => 'Tizen Mobile Web Application',
         'tztv' => 'Tizen TV Web Application',
         'ucbr' => 'UC Browser',
+        'uiwv' => 'UIWebView',
         'viva' => 'Vivaldi',
         'w3m'  => 'w3m',
         'wsbr' => 'webOS Browser',
@@ -457,11 +461,11 @@ class UserAgentAnalyzer
     ];
 
     protected $puffin = [
-        'IP' => ['ios',  1],
-        'IT' => ['ios',  1],
-        'AP' => ['andr', 1],
-        'AT' => ['andr', 1],
-        'WP' => ['winp', 1],
+        'IP' => ['ios',  100],
+        'IT' => ['ios',  100],
+        'AP' => ['andr', 100],
+        'AT' => ['andr', 100],
+        'WP' => ['winp', 100],
         'WD' => ['win',  0],
     ];
 
@@ -604,9 +608,10 @@ class UserAgentAnalyzer
 
         foreach ($matches as $m) {
             $name = null;
-            $tmp  = $prev . $m[1];
 
             do {
+                $tmp  = $prev . $m[1];
+
                 if (isset($m[5]{0}, $this->raw[$tmp . $m[2] . $m[3] . $m[4] . $m[5]])) {
                     $name   = $tmp . $m[2] . $m[3] . $m[4] . $m[5];
                     $v4     = false;
@@ -707,7 +712,9 @@ class UserAgentAnalyzer
 
             $merge = null;
 
-            if (\is_array($vs)) {
+            if (null === $vs) {
+                $ver = $version;
+            } elseif (\is_array($vs)) {
                 $ver = null;
 
                 foreach ($vs as $key => $val) {
@@ -727,10 +734,8 @@ class UserAgentAnalyzer
                         break;
                     }
                 }
-            } elseif (isset($vs{0})) {
-                $ver = $vs;
             } else {
-                $ver = $version;
+                $ver = $vs;
             }
 
             if (\is_string($merge)) {
@@ -955,13 +960,16 @@ class UserAgentAnalyzer
     }
 
     /**
-     * Safari
+     * Safari, UIWebView
      */
     protected function wbkt(array $data)
     {
         if (! empty($this->details['Version'])) {
             $data['br'][1] = 'sfri';
             $data['br'][2] = $this->details['Version'];
+        } elseif ('ios' === $data['os'][1]) {
+            $data['br'][1] = 'uiwv';
+            $data['br'][2] = null;
         }
         return $data;
     }
