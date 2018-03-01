@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '2.0008';
+    const VERSION = '2.0009';
 
     const WINNT = [
         '4.0'  => 'NT 4.0',
@@ -155,6 +155,7 @@ class UserAgentAnalyzer
 
         'FBAN/'                  => ['br', 3990, 'fban', true,  ''],
 
+        'Silk/'                  => ['br', 3600, 'silk', true,  '%^(\d\d?)\.(\d\d?)%'],
         'Midori/'                => ['br', 3500, 'midr', true,  '%^(0)\.(\d\d?)%'],
         'Comodo_Dragon/'         => ['br', 3400, 'cdrg', true,  '%^(\d\d?)\.(\d\d?)%'],
         'CoolNovo/'              => ['br', 3300, 'novo', true,  '%^([012])\.(\d\d?)%'],
@@ -226,13 +227,13 @@ class UserAgentAnalyzer
         'MorphOS'                => ['os', 8902, 'morp', null,  '%^(\d)(?:\.(\d+))?%'],
         'AROS'                   => ['os', 8901, 'aros', null,  '%^(\d)(?:\.(\d+))?%'],
         'AmigaOS'                => ['os', 8900, 'amos', null,  '%^(\d)(?:\.(\d+))?%'],
-        'iPhone;'                => ['os', 8010, 'ios',  false, null, 'm' => 100],
-        'iPad;'                  => ['os', 8010, 'ios',  false, null, 'm' => 100],
-        'iPod;'                  => ['os', 8010, 'ios',  false, null, 'm' => 100],
+        'iPhone;'                => ['os', 8011, 'ios',  false, null, 'm' => 100],
+        'iPad;'                  => ['os', 8011, 'ios',  false, null, 'm' => 100],
+        'iPod;'                  => ['os', 8011, 'ios',  false, null, 'm' => 100],
         'CPU '                   => ['nx'],
         'CPU iPhone '            => ['nx'],
-        'CPU iPhone OS '         => ['os', 8010, 'ios',  true, '%^(1?\d)[._](\d\d?)(?:[._]\d\d?)?$%'],
-        'CPU OS '                => ['os', 8010, 'ios',  true, '%^(1?\d)[._](\d\d?)(?:[._]\d\d?)?$%'],
+        'CPU iPhone OS '         => ['os', 8011, 'ios',  true, '%^(1?\d)[._](\d\d?)(?:[._]\d\d?)?$%'],
+        'CPU OS '                => ['os', 8011, 'ios',  true, '%^(1?\d)[._](\d\d?)(?:[._]\d\d?)?$%'],
         'Mac '                   => ['nx'],
         'Mac OS '                => ['os', 8010, 'mac',  true, '%^(1?\d)[._](\d\d?)(?:[._]\d\d?)?$%'],
         'Mac OS X '              => ['os', 8010, 'osx',  true, '%^(1?\d)[._](\d\d?)(?:[._]\d\d?)?$%', 'f' => -0.2],
@@ -392,6 +393,7 @@ class UserAgentAnalyzer
         'sfri' => 'Safari',
         'ssbr' => 'Samsung Internet',
         'smnk' => 'SeaMonkey',
+        'silk' => 'Amazon Silk',
         'slnr' => 'Sleipnir',
         'iron' => 'SRWare Iron',
         'tzmo' => 'Tizen Mobile Web Application',
@@ -559,11 +561,7 @@ class UserAgentAnalyzer
             $this->botSize += 40 * $count;
         }
         if (false !== \strpos($uaLC, 'like')) {
-            if (isset($botCheck['google'])) {
-                $uaIn = \preg_replace('%\blike[^,;()]*%i', '', $uaIn);
-            } else {
-                $uaIn = \preg_replace('%\blike[^()]*(?:\([^)]*\)[^()]*)*%i', '', $uaIn);
-            }
+            $uaIn = \preg_replace('%\blike[^,;)]*%i', '', $uaIn);
         }
 
         $data = $this->details($uaIn);
