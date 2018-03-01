@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '2.0004';
+    const VERSION = '2.0008';
 
     const WINNT = [
         '4.0'  => 'NT 4.0',
@@ -187,7 +187,9 @@ class UserAgentAnalyzer
 
         'S40OviBrowser/'         => ['br',  700, 'ovib', true,  '%^(\d)\.(\d\d?)%'],
 
+        'Maemo Browser '         => ['br',  600, 'mmbr', true,  '%^(\d)\.(\d\d?)%'],
         'Galeon/'                => ['br',  500, 'galn', true,  '%^(1|2)\.(\d\d?)%'],
+        'IceCat/'                => ['br',  451, 'icat', true,  '%^(\d\d?)\.(\d\d?)%'],
         'Iceweasel/'             => ['br',  450, 'icwl', true,  '%^(\d\d?)\.(\d\d?)%'],
         'K-Meleon/'              => ['br',  400, 'kmln', true,  '%^(\d\d?)\.(\d\d?)%'],
         'SeaMonkey/'             => ['br',  350, 'smnk', true,  '%^(1|2)\.(\d\d?)%'],
@@ -221,6 +223,9 @@ class UserAgentAnalyzer
         'Win98;'                 => ['os', 9000, 'win',  false, '98'],
         'Win95;'                 => ['os', 9000, 'win',  false, '95'],
         'Windows;'               => ['os', 8999, 'win',  false, null],
+        'MorphOS'                => ['os', 8902, 'morp', null,  '%^(\d)(?:\.(\d+))?%'],
+        'AROS'                   => ['os', 8901, 'aros', null,  '%^(\d)(?:\.(\d+))?%'],
+        'AmigaOS'                => ['os', 8900, 'amos', null,  '%^(\d)(?:\.(\d+))?%'],
         'iPhone;'                => ['os', 8010, 'ios',  false, null, 'm' => 100],
         'iPad;'                  => ['os', 8010, 'ios',  false, null, 'm' => 100],
         'iPod;'                  => ['os', 8010, 'ios',  false, null, 'm' => 100],
@@ -246,6 +251,10 @@ class UserAgentAnalyzer
         'Adr '                   => ['os', 7000, 'andr', true, '%^(\d)\.(\d)%', 'm' => 100],
         'RemixOS'                => ['os', 6000, 'remx', null,  null],
         'CrOS'                   => ['os', 5000, 'cros', null,  null],
+        'Sailfish'               => ['os', 2600, 'sfsh', null,  null],
+        'ArchLinux'              => ['os', 2500, 'arch', null,  null],
+        'Arch;'                  => ['os', 2500, 'arch', false, ''],
+        'Arch'                   => ['nx'],
         'CentOS'                 => ['os', 2400, 'cnos', null,  '%\.el(\d+)[^\s;/]*\.centos%'],
         'SUSE'                   => ['os', 2300, 'suse', null,  ''],
         'openSUSE'               => ['os', 2300, 'suse', null,  '%^(\d\d)\.(\d)%'],
@@ -263,6 +272,8 @@ class UserAgentAnalyzer
         'Red HatEnterprise'      => ['os', 1801, 'rhel', null,  '%\.el(\d+)%'],
         'Red Hat'                => ['os', 1800, 'rhat', null,  self::REDHAT],
         'Red '                   => ['nx'],
+        'Maemo '                 => ['os', 1750, 'maem', null,  null, 'm' => 100],
+        'Maemo;'                 => ['os', 1750, 'maem', false, '', 'm' => 100],
         'Debian'                 => ['os', 1700, 'debn', null,  null],
         'Slackware'              => ['os', 1600, 'slwa', null,  null],
         'MeeGo'                  => ['os', 1500, 'mego', null,  null, 'm' => 50],
@@ -271,6 +282,9 @@ class UserAgentAnalyzer
         'FreeBSD'                => ['os', 1000, 'fbsd', null,  null],
         'NetBSD'                 => ['os', 1000, 'ndsd', null,  null],
         'OpenBSD'                => ['os', 1000, 'obsd', null,  null],
+        'BrewMP'                 => ['os',  851, 'brmp', null,  '%^(\d)\.(\d\d?)%', 'm' => 100],
+        'Brew'                   => ['os',  850, 'brew', null,  '%^(\d)\.(\d\d?)%', 'm' => 100],
+        'BREW'                   => ['os',  850, 'brew', null,  '%^(\d)\.(\d\d?)%', 'm' => 100],
         'Haiku'                  => ['os',  810, 'haik', null,  null],
         'BeOS'                   => ['os',  800, 'beos', null,  null],
         'Bada/'                  => ['os',  750, 'bada', true,  '%^(1|2)\.(\d)%', 'm' => 50],
@@ -290,6 +304,8 @@ class UserAgentAnalyzer
         'J2ME/'                  => ['os',  100, 'java', true,  '%^MIDP%', 'm' => 50],
         'Profile/'               => ['os',  100, 'java', true,  '%^MIDP%', 'm' => 50],
         'Configuration/'         => ['os',  100, 'java', true,  '%^CLDC%', 'm' => 50],
+        'SunOS'                  => ['os',   60, 'snos', null,  ''],
+        'AIX '                   => ['os',   55, 'aix',  null,  '%^([1-7])(?:$|\.(\d))%'],
         'X11;'                   => ['os',   50, 'unix', false, null],
 
         'Mobile'                 => ['', 'm' => 100],
@@ -298,24 +314,23 @@ class UserAgentAnalyzer
         'rv:'                    => ['', 's' => 'rv'],
         'SMART-TV'               => ['', 's' => 'SMART-TV'],
 
-        'MsnBot-Media'           => ['ro', 'MsnBot-Media'],
         'BingPreview'            => ['ro', 'BingPreview'],
-        'Googlebot'              => ['ro', 'Googlebot'],
-        'GoogleBot'              => ['ro', 'Googlebot'],
-        'Googlebot-Mobile'       => ['ro', 'Googlebot'],
-        '360Spider'              => ['ro', '360Spider'],
         'Mediapartners-Google'   => ['ro', 'Google AdSense'],
-        'bingbot'                => ['ro', 'bingbot'],
-        'YandexBot'              => ['ro', 'YandexBot'],
-        'YandexMobileBot'        => ['ro', 'YandexMobileBot'],
-        'YandexScreenshotBot'    => ['ro', 'YandexScreenshotBot'],
-        'YandexMedianaBot'       => ['ro', 'YandexMedianaBot'],
         'YandexBlogs'            => ['ro', 'YandexBlogs'],
         'FlipboardProxy'         => ['ro', 'FlipboardProxy'],
         'FlipboardBrowserProxy'  => ['ro', 'FlipboardProxy'],
         'Prerender'              => ['ro', 'Prerender'],
+        'googleweblight'         => ['ro', 'GoogleWebLight'], // ?
+        'Yahoo'                  => ['nx'],
+        'YahooSlurp'             => ['ro', 'Yahoo! Slurp'],
+        'YahooAd'                => ['ro', 'Yahoo Ad monitoring'],
+        'Daum'                   => ['ro', 'Daum'],
+        'elefent'                => ['ro', 'Elefent'],
+        'GigablastOpenSource'    => ['ro', 'Gigabot'],
+        'Qwantify'               => ['ro', 'Qwantify'],
+        'YahooCacheSystem'       => ['ro', 'YahooCacheSystem'],
         'Applebot'               => ['ro', 'Applebot'],
-        'Diffbot'                => ['ro', 'Diffbot'],
+        'Dataprovider'           => ['ro', 'Dataprovider'],
     ];
 
     protected $alias = [
@@ -344,6 +359,7 @@ class UserAgentAnalyzer
         'galn' => 'Galeon',
         'haik' => 'Haiku',
         'icab' => 'iCab',
+        'icat' => 'IceCat',
         'icwl' => 'Iceweasel',
         'msie' => 'Internet Explorer',
         'iemo' => 'Internet Explorer Mobile',
@@ -353,6 +369,7 @@ class UserAgentAnalyzer
         'luna' => 'Lunascape',
         'lunx' => 'Lynx',
         'mxth' => 'Maxthon',
+        'mmbr' => 'MicroB',
         'edge' => 'Microsoft Edge',
         'midr' => 'Midori',
         'mzll' => 'Mozilla', // ?
@@ -393,10 +410,16 @@ class UserAgentAnalyzer
         'trnt' => 'Trident (layout engine)',
         'wbkt' => 'WebKit (layout engine)',
 
+        'aix'  => 'AIX',
+        'amos' => 'AmigaOS',
         'andr' => 'Android',
+        'arch' => 'Arch Linux',
+        'aros' => 'AROS',
         'bada' => 'Bada',
         'bbos' => 'BlackBerry OS',
         'beos' => 'BeOS',
+        'brew' => 'Brew',
+        'brmp' => 'Brew MP',
         'cnos' => 'CentOS',
         'cros' => 'Chrome OS',
         'darw' => 'Darwin',
@@ -413,9 +436,11 @@ class UserAgentAnalyzer
         'mint' => 'Linux Mint',
         'mac'  => 'Mac',
         'osx'  => 'Mac OS X',
+        'maem' => 'Maemo',
         'mndv' => 'Mandriva Linux',
         'mgia' => 'Mageia',
         'mego' => 'MeeGo',
+        'morp' => 'MorphOS',
         'ndsd' => 'NetBSD',
         'obsd' => 'OpenBSD',
         'suse' => 'openSUSE',
@@ -423,10 +448,12 @@ class UserAgentAnalyzer
         'rhat' => 'Red Hat',
         'rhel' => 'Red Hat Enterprise Linux',
         'remx' => 'Remix OS',
+        'sfsh' => 'Sailfish OS',
         's30p' => 'Series 30+',
         's80'  => 'Series 80',
         's90'  => 'Series 90',
         'slwa' => 'Slackware',
+        'snos' => 'Solaris',
         'symb' => 'Symbian OS',
         'tizn' => 'Tizen',
         'ubnt' => 'Ubuntu',
@@ -476,6 +503,7 @@ class UserAgentAnalyzer
         'nutch'   => [100, null],
         'bot'     => [100, '%(?<!cu)bot(?!tle)%'],
         'spider'  => [100, '%spider(?![\w\ ]*build/)%'],
+        'google'  => [100, '%google(?:w|\ |;|\-(?!tr))%'],
         'preview' => [ 50, null],
         'search'  => [ 40, null],
     ];
@@ -531,7 +559,11 @@ class UserAgentAnalyzer
             $this->botSize += 40 * $count;
         }
         if (false !== \strpos($uaLC, 'like')) {
-            $uaIn = \preg_replace('%\blike[^()]*(?:\([^)]*\)[^()]*)*%i', '', $uaIn);
+            if (isset($botCheck['google'])) {
+                $uaIn = \preg_replace('%\blike[^,;()]*%i', '', $uaIn);
+            } else {
+                $uaIn = \preg_replace('%\blike[^()]*(?:\([^)]*\)[^()]*)*%i', '', $uaIn);
+            }
         }
 
         $data = $this->details($uaIn);
@@ -572,7 +604,7 @@ class UserAgentAnalyzer
         \asort($botCheck, \SORT_NUMERIC);
 
         foreach ($botCheck as $key => $size) {
-            if (\preg_match('%[^;()]*' . $key . '[a-z\d\.!_-]*%i', $uaIn, $match)) {
+            if (\preg_match('%\b[^;()]*' . $key . '[\w\ .!-]*%i', $uaIn, $match)) {
                 $uaIn = $match[0];
                 break;
             }
