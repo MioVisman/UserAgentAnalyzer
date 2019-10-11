@@ -682,7 +682,7 @@ class UserAgentAnalyzer
                     $ending = $m[2] . $m[3];
                     break;
                 }
-            } while (isset($prev{0}) && ! $prev = '');
+            } while (isset($prev[0]) && ! $prev = '');
 
             if (null === $name) {
                 continue;
@@ -711,13 +711,13 @@ class UserAgentAnalyzer
                 $version .= $tmp . $m[7];
             }
 
-            if (isset($version{0}) || isset($this->stop[$m[5]])) {
+            if (isset($version[0]) || isset($this->stop[$m[5]])) {
                 $prev = '';
             } else {
                 $prev = $name;
             }
 
-            if (isset($ending{0}) && empty($raw['ending'])) {
+            if (isset($ending[0]) && empty($raw['ending'])) {
                 $prev = '';
                 $data['f'] += 0.1;
                 continue;
@@ -766,7 +766,7 @@ class UserAgentAnalyzer
                         $ver   = $version;
                         $merge = $val;
                         break;
-                    } elseif ('%' === $key{0}) {
+                    } elseif ('%' === $key[0]) {
                         if (\preg_match($key, $version, $match)) {
                             if (isset($match[1])) {
                                 unset($match[0]);
@@ -811,7 +811,7 @@ class UserAgentAnalyzer
             if ($raw[1] >= $data[$type][0]) {
                 $data[$type][0] = $raw[1];
 
-                if (isset($ver{0}) || $data[$type][1] !== $raw[2]) {
+                if (isset($ver[0]) || $data[$type][1] !== $raw[2]) {
                     $data[$type][2] = $ver;
                 }
 
