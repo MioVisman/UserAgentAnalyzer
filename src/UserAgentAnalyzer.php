@@ -605,7 +605,7 @@ class UserAgentAnalyzer
         if (\is_string($data)) {
             $data = \explode('|', $data, 2);
             $this->result['botName'] = $data[0];
-            if (isset($data[1]{0})) {
+            if (isset($data[1][0])) {
                 $this->result['botVersion'] = $data[1];
             }
             return $this->result;
@@ -656,22 +656,22 @@ class UserAgentAnalyzer
             do {
                 $tmp  = $prev . $m[1];
 
-                if (isset($m[5]{0}, $this->raw[$tmp . $m[2] . $m[3] . $m[4] . $m[5]])) {
+                if (isset($m[5][0], $this->raw[$tmp . $m[2] . $m[3] . $m[4] . $m[5]])) {
                     $name   = $tmp . $m[2] . $m[3] . $m[4] . $m[5];
                     $v4     = false;
                     $ending = '';
                     break;
-                } elseif (isset($m[4]{0}, $this->raw[$tmp . $m[2] . $m[3] . $m[4]])) {
+                } elseif (isset($m[4][0], $this->raw[$tmp . $m[2] . $m[3] . $m[4]])) {
                     $name   = $tmp . $m[2] . $m[3] . $m[4];
                     $v4     = false;
                     $ending = '';
                     break;
-                } elseif (isset($m[3]{0}, $this->raw[$tmp . $m[2] . $m[3]])) {
+                } elseif (isset($m[3][0], $this->raw[$tmp . $m[2] . $m[3]])) {
                     $name   = $tmp . $m[2] . $m[3];
                     $v4     = true;
                     $ending = '';
                     break;
-                } elseif (isset($m[2]{0}, $this->raw[$tmp . $m[2]])) {
+                } elseif (isset($m[2][0], $this->raw[$tmp . $m[2]])) {
                     $name   = $tmp . $m[2];
                     $v4     = true;
                     $ending = $m[3];
@@ -698,16 +698,16 @@ class UserAgentAnalyzer
                 $data['m'] += $raw['m'];
             }
 
-            if ($v4 && isset($m[4]{0})) {
+            if ($v4 && isset($m[4][0])) {
                 $version = $m[4];
                 $tmp     = $m[5];
             } else {
                 $version = null;
                 $tmp     = '';
             }
-            if (isset($m[6]{0})) {
+            if (isset($m[6][0])) {
                 $version .= $tmp . $m[6];
-            } elseif (isset($m[7]{0})) {
+            } elseif (isset($m[7][0])) {
                 $version .= $tmp . $m[7];
             }
 
@@ -746,7 +746,7 @@ class UserAgentAnalyzer
                 $data['f'] += 0.1;
             }
 
-            if (isset($raw[4]{0}) && '%' === $raw[4]{0}) {
+            if (isset($raw[4][0]) && '%' === $raw[4][0]) {
                 $vs = [
                     $raw[4] => null,
                 ];
