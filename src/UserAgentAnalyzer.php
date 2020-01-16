@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @copyright  Copyright (c) 2018 Visman. All rights reserved.
+ * @copyright  Copyright (c) 2018-2020 Visman. All rights reserved.
  * @author     Visman <mio.visman@yandex.ru>
  * @link       https://github.com/MioVisman/UserAgentAnalyzer
  * @license    https://opensource.org/licenses/MIT The MIT License (MIT)
@@ -13,7 +13,7 @@ use InvalidArgumentException;
 
 class UserAgentAnalyzer
 {
-    const VERSION = '2.0010';
+    const VERSION = '2.0011';
 
     const WINNT = [
         '4.0'  => 'NT 4.0',
@@ -145,6 +145,7 @@ class UserAgentAnalyzer
         'Lunascape'              => ['br', 7300, 'luna', true,  '%^\d\.\d+%'],
         'EdgA/'                  => ['br', 7150, 'edga', true,  '%^\d\d\.\d+%', 'm' => 100],
         'EdgiOS/'                => ['br', 7140, 'edgi', true,  '%^\d\d\.\d+%', 'm' => 100],
+        'Edg/'                   => ['br', 7131, 'edg',  true,  '%^\d\d\.\d+$%'],
         'Edge/'                  => ['br', 7130, 'edge', true,  '%^1\d\.\d+$%'],
         'MSIEMobile'             => ['br', 7120, 'iemo', true,  '%^6\.\d+%', 'm' => 100],
         'IEMobile'               => ['br', 7110, 'iemo', true,  '%^(6|7|9|1[01])\.(\d+)$%', 'm' => 100],
@@ -383,6 +384,7 @@ class UserAgentAnalyzer
         'edga' => 'Microsoft Edge for Android',
         'edgi' => 'Microsoft Edge for iOS',
         'edge' => 'Microsoft Edge',
+        'edg'  => 'Microsoft Edge',
         'midr' => 'Midori',
         'mzll' => 'Mozilla', // ?
         'nfrt' => 'NetFront',
