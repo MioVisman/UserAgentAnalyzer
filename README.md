@@ -4,8 +4,6 @@
 
 The browser/OS or robot detection by user agent.
 
-[Demo](http://uaatest.000webhostapp.com/)
-
 ## Requirements
 
 * PHP 5.6.0+
